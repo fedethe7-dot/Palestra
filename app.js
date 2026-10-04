@@ -21,17 +21,24 @@ const SCHEDE_DEFAULT = {
     { nome: 'Plank', gruppo: 'Core', tipo: 'tempo', serie: 3, rip: '45-60', carico: '', recupero: '80 sec' },
   ]},
 };
+const copiaSchede = () => JSON.parse(JSON.stringify(SCHEDE_DEFAULT));
+
+/* Calorie: MET per allenamento con i pesi (≈300 kcal/ora a 73 kg) e peso corporeo di riserva.
+   Se inserisci le kcal dell'orologio, la stima si tara da sola sui tuoi dati. */
+const MET_PESI = 4;
+const PESO_DEFAULT = 73;
 
 /* ============ 2. SALVATAGGIO SUL TELEFONO ============ */
 const KEY = 'palestra-dati';
 function migrate(d) {
   return {
-    version: 1,
+    version: 2,
     workouts: d.workouts || [],
     weights: d.weights || [],
-    settings: { name: '', theme: 'auto', goal: '', ...(d.settings || {}) },
-    schede: d.schede || SCHEDE_DEFAULT,
+    settings: { name: '', theme: 'auto', goal: '', syncUrl: '', syncToken: '', lastSync: '', syncError: '', lastRead: '', ...(d.settings || {}) },
+    schede: d.schede || copiaSchede(),
     draft: d.draft || null,
+    outbox: d.outbox || [],
   };
 }
 function load() {
@@ -84,7 +91,7 @@ function lastFor(name, date) {
 }
 function nextSession() {
   const keys = Object.keys(db.schede), ws = sorted();
-  if (!ws.length) return keys[0];
+  if (!ws.length || !keys.length) return keys[0];
   const i = keys.indexOf(ws[ws.length - 1].session);
   return keys[(i + 1) % keys.length];
 }
@@ -117,7 +124,166 @@ function suggestion(e, sets) {
   return `L'ultima volta hai fatto ${txt}. Prova a raggiungere ${t.join('-')}.`;
 }
 
-/* ============ 5. GRAFICI ============ */
+/* Calorie */
+function bodyKg() {
+  const w = [...db.weights].sort((a, b) => a.date.localeCompare(b.date)).at(-1);
+  return w ? w.kg : PESO_DEFAULT;
+}
+function durataAuto(d) {
+  if (d.startedAt) return Math.min(180, Math.max(1, Math.round((Date.now() - d.startedAt) / 60000)));
+  return Math.round(d.exercises.reduce((s, e) => s + e.sets.length, 0) * 2.5);
+}
+const durataDraft = d => num(d.durata) || durataAuto(d);
+function kcalAlMinuto() {
+  const o = db.workouts.filter(w => w.kcalFonte === 'orologio' && w.kcal && w.durata).slice(-10);
+  if (o.length) return o.reduce((s, w) => s + w.kcal / w.durata, 0) / o.length;
+  return MET_PESI * bodyKg() / 60;
+}
+const stimaKcal = min => Math.round(kcalAlMinuto() * min);
+const kcalLine = d => { const m = durataDraft(d);
+  return `Stima: <b>~${stimaKcal(m)} kcal</b> (${m} min • ${fmt(bodyKg(), 1)} kg)`; };
+
+/* ============ 5. SINCRONIZZAZIONE CON FOGLI GOOGLE ============ */
+let syncing = false, reading = false;
+/* Ridisegna solo se non stai scrivendo in un campo (così non perdi quello che digiti) */
+function safeRender() {
+  const a = document.activeElement;
+  if (!a || !['INPUT', 'TEXTAREA', 'SELECT'].includes(a.tagName)) render();
+}
+
+function dashboardInfo() {
+  const ws = sorted(), last = ws[ws.length - 1];
+  const pesi = [...db.weights].sort((a, b) => a.date.localeCompare(b.date));
+  return {
+    totale: ws.length,
+    ultima: last ? `Sessione ${last.session} – ${parseISO(last.date).toLocaleDateString('it-IT')}` : '',
+    peso: pesi.length ? pesi.at(-1).kg : '',
+    obiettivo: num(db.settings.goal) ?? '',
+  };
+}
+function workoutPayload(w) {
+  return { type: 'workout', workout: {
+    id: w.id, date: w.date, session: w.session, note: w.note || '',
+    kcal: w.kcal || '', kcalFonte: w.kcalFonte || '', durata: w.durata || '',
+    exercises: w.exercises.map(e => ({ nome: e.nome, tipo: e.tipo, serie: e.serie ?? '', rip: e.rip ?? '',
+      carico: e.carico ?? '', recupero: e.recupero ?? '', note: e.note ?? '', sets: e.sets })) } };
+}
+async function inviaAlFoglio(item) {
+  const url = (db.settings.syncUrl || '').trim();
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ ...item, token: (db.settings.syncToken || '').trim(), dashboard: dashboardInfo() }),
+  });
+  const r = await res.json();
+  if (!r.ok) throw new Error(r.error || 'Errore sconosciuto');
+}
+function queue(item) { db.outbox.push(item); save(); flush(); }
+
+async function flush() {
+  if (syncing) return { sent: 0, busy: true };
+  if (!db.outbox.length) return { sent: 0 };
+  if (!(db.settings.syncUrl || '').trim()) return { sent: 0, error: 'Collegamento non configurato' };
+  if (!navigator.onLine) return { sent: 0, error: 'Sei offline: invio appena torni online' };
+  syncing = true; let sent = 0, error = '';
+  try {
+    while (db.outbox.length) {
+      const item = db.outbox[0];
+      await inviaAlFoglio(item);
+      db.outbox.shift(); sent++;
+      if (item.type === 'workout') { const w = db.workouts.find(x => x.id === item.workout.id); if (w) w.synced = true; }
+      db.settings.lastSync = new Date().toISOString(); db.settings.syncError = '';
+      save();
+    }
+  } catch (e) {
+    error = String(e.message || e); db.settings.syncError = error; save();
+  } finally {
+    syncing = false;
+    safeRender();
+  }
+  return { sent, error };
+}
+async function syncNow() {
+  const inCoda = new Set(db.outbox.filter(o => o.type === 'workout').map(o => o.workout.id));
+  db.workouts.filter(w => !w.synced && !inCoda.has(w.id)).forEach(w => db.outbox.push(workoutPayload(w)));
+  save();
+  if (!db.outbox.length) return toast('✅ Tutto già sincronizzato');
+  toast('☁️ Invio in corso...');
+  const r = await flush();
+  toast(r.error ? `⚠️ ${r.error}` : `☁️ Inviati ${r.sent} elementi a Fogli Google`);
+}
+async function testSync() {
+  if (!(db.settings.syncUrl || '').trim()) return toast('Incolla prima il link dello script');
+  try {
+    await inviaAlFoglio({ type: 'ping' }); db.settings.syncError = ''; save();
+    toast('✅ Collegamento riuscito!');
+    if (!db.settings.lastRead) setTimeout(scaricaDalFoglio, 1500);
+  } catch (e) { toast(`⚠️ ${e.message || e}`); db.settings.syncError = String(e.message || e); save(); }
+  render();
+}
+
+/* Legge dal foglio tutti gli allenamenti e le pesate e li unisce a quelli dell'app */
+async function scaricaDalFoglio(silenzioso = false) {
+  const url = (db.settings.syncUrl || '').trim(), token = (db.settings.syncToken || '').trim();
+  if (!url) return silenzioso ? null : toast('Incolla prima il link dello script');
+  if (reading) return;
+  if (!silenzioso) toast('⬇️ Lettura del foglio in corso...');
+  let r; reading = true;
+  try {
+    const res = await fetch(`${url}?azione=leggi&token=${encodeURIComponent(token)}`);
+    r = await res.json();
+    if (!r.ok) throw new Error(r.error || 'Errore sconosciuto');
+  } catch (e) { reading = false; return silenzioso ? null : toast(`⚠️ ${e.message || e}`); }
+  reading = false;
+
+  const info = {};
+  Object.values(db.schede).forEach(sc => sc.esercizi.forEach(e => { info[e.nome.toLowerCase()] = e; }));
+  const gruppi = {};
+  r.righe.forEach(x => {
+    const key = x.date + '|' + x.session;
+    const sets = x.sets.map(s => ({ reps: num(s.reps), kg: num(s.kg) })).filter(s => s.reps != null);
+    if (!sets.length) return;
+    const ref = info[x.nome.toLowerCase()];
+    const tipo = ref ? ref.tipo : (sets.some(s => s.kg) ? 'carico' : 'corpo');
+    const w = (gruppi[key] ||= { date: x.date, session: x.session, exercises: [], note: '', kcal: null, durata: null });
+    if (x.noteSessione && !w.note && !w.kcal) {
+      const k = x.noteSessione.match(/kcal:\s*(\d+)(?:\s*\((\w+)\))?/i), d = x.noteSessione.match(/durata:\s*(\d+)/i);
+      if (k) { w.kcal = +k[1]; w.kcalFonte = k[2] || 'stima'; }
+      if (d) w.durata = +d[1];
+      w.note = x.noteSessione.split('•').map(t => t.trim()).filter(t => t && !/^(kcal|durata):/i.test(t)).join(' • ');
+    }
+    w.exercises.push({ nome: x.nome, gruppo: ref ? ref.gruppo : 'Altro', tipo, serie: num(x.serie) ?? '', rip: x.rip,
+      carico: x.carico, recupero: x.recupero, note: x.note,
+      sets: sets.map(s => ({ reps: s.reps, kg: tipo === 'carico' ? s.kg : null })) });
+  });
+
+  let nuovi = 0, aggiornati = 0;
+  Object.entries(gruppi).forEach(([key, g]) => {
+    const i = db.workouts.findIndex(w => w.date + '|' + w.session === key);
+    const w = { ...g, synced: true };
+    if (!w.kcal) { delete w.kcal; delete w.kcalFonte; }
+    if (!w.durata) delete w.durata;
+    if (i < 0) { db.workouts.push({ id: uid(), ...w }); nuovi++; }
+    else if (db.workouts[i].synced) {
+      const old = db.workouts[i];
+      db.workouts[i] = { ...old, ...w, id: old.id, kcal: w.kcal || old.kcal, kcalFonte: w.kcalFonte || old.kcalFonte };
+      aggiornati++;
+    }
+  });
+  const datePesi = new Set(db.weights.map(p => p.date));
+  let pesiNuovi = 0;
+  (r.pesi || []).forEach(p => { const kg = num(p.kg);
+    if (kg && !datePesi.has(p.date)) { db.weights.push({ id: uid(), date: p.date, kg }); datePesi.add(p.date); pesiNuovi++; } });
+
+  const dash = r.dashboard || {};
+  if (!db.settings.goal && num(dash.obiettivo)) db.settings.goal = String(num(dash.obiettivo));
+
+  db.settings.lastRead = new Date().toISOString(); save(); safeRender();
+  if (!silenzioso || nuovi || pesiNuovi)
+    toast(`✅ Dal foglio: ${nuovi} allenamenti nuovi${silenzioso ? '' : `, ${aggiornati} aggiornati`}, ${pesiNuovi} pesate`);
+}
+
+/* ============ 6. GRAFICI ============ */
 function lineChart(pts, color, unit) {
   if (pts.length < 2) return emptyBox(pts.length ? 'Serve almeno un altro dato per il grafico' : 'Nessun dato nel periodo');
   const W = 320, H = 160, P = { l: 34, r: 10, t: 12, b: 24 };
@@ -153,21 +319,23 @@ function barChart(items) {
     <div style="margin-top:8px;display:flex;gap:6px">${Object.keys(db.schede).map(s => `<span class="chip ${s}">${s}</span>`).join('')}</div>`;
 }
 
-/* ============ 6. SCHERMATE ============ */
-let view = 'home', period = 30, chartEx = null, openW = null;
+/* ============ 7. SCHERMATE ============ */
+let view = 'home', period = 30, chartEx = null, openW = null, editS = null;
 const PERIODI = [[7, '7g'], [30, '30g'], [90, '3m'], [180, '6m'], [365, '1a'], [0, 'Tutto']];
 const periodSeg = () => `<div class="seg">${PERIODI.map(([d, l]) => `<button class="${period === d ? 'active' : ''}" data-action="period" data-days="${d}">${l}</button>`).join('')}</div>`;
 const stat = (label, value, unit = '', extra = '') => `<div class="card stat"><div class="label">${label}</div><div class="value">${value} <small>${unit}</small></div>${extra}</div>`;
 
 function workoutRow(w, actions = false) {
   const open = actions && openW === w.id;
+  const cloud = db.settings.syncUrl ? (w.synced ? ' • ☁️' : ' • ⏳') : '';
   const det = open ? `<div style="margin-top:8px;font-size:13px">
       ${w.exercises.map(e => `<div><b>${esc(e.nome)}</b>: ${e.sets.map(s => e.tipo === 'carico' ? `${fmt(s.kg, 2)}×${s.reps}` : `${s.reps}${e.tipo === 'tempo' ? '"' : ''}`).join(', ')}</div>`).join('')}
+      ${w.kcal ? `<div class="muted" style="margin-top:6px">🔥 ${w.kcal} kcal (${w.kcalFonte === 'orologio' ? 'orologio' : 'stima'})${w.durata ? ` • ${w.durata} min` : ''}</div>` : ''}
       ${w.note ? `<div class="muted" style="margin-top:6px">📝 ${esc(w.note)}</div>` : ''}
       <button class="btn small danger" style="margin-top:10px" data-action="del-workout" data-id="${w.id}">Elimina</button></div>` : '';
   return `<div class="list-item" ${actions ? `data-action="toggle-w" data-id="${w.id}" style="cursor:pointer"` : ''}>
     <div style="flex:1"><div class="title"><span class="chip ${w.session}">${w.session}</span> ${fmtDateLong(w.date)}</div>
-    <div class="muted">${w.exercises.length} esercizi • ${fmt(wVolume(w))} kg</div>${det}</div>
+    <div class="muted">${w.exercises.length} esercizi • ${fmt(wVolume(w))} kg${w.kcal ? ` • 🔥 ${w.kcal} kcal` : ''}${cloud}</div>${det}</div>
     ${actions ? `<span class="muted">${open ? '▲' : '▼'}</span>` : ''}</div>`;
 }
 
@@ -184,9 +352,9 @@ function viewHome() {
   const hero = db.draft
     ? `<div class="card hero"><div class="muted">Allenamento in corso</div><div class="big" style="margin:6px 0 12px">Sessione ${db.draft.session}</div>
        <button class="btn white full" data-action="go" data-view="allena">Continua ▶</button></div>`
-    : `<div class="card hero"><div class="row"><span class="muted">Allenamento di oggi</span><span class="chip">Sessione ${next}</span></div>
+    : next ? `<div class="card hero"><div class="row"><span class="muted">Allenamento di oggi</span><span class="chip">Sessione ${next}</span></div>
        <div class="big" style="margin:8px 0 14px">${esc(db.schede[next].nome)}</div>
-       <button class="btn white full" data-action="start" data-s="${next}">Inizia allenamento ▶</button></div>`;
+       <button class="btn white full" data-action="start" data-s="${next}">Inizia allenamento ▶</button></div>` : '';
   const deltaTxt = delta == null ? '' : `<div class="${delta >= 0 ? 'up' : 'down'}" style="font-size:12px;font-weight:700;margin-top:4px">${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta)}% vs sett. scorsa</div>`;
   return `${head(hello, oggi)}${hero}
     <div class="grid2">
@@ -207,10 +375,11 @@ function viewAllena() {
     const l = ws.find(w => w.session === s);
     return `<div class="card"><div class="row"><span class="chip ${s}">Sessione ${s}</span><span class="muted">${l ? 'Ultima: ' + fmtDate(l.date) : 'Mai fatta'}</span></div>
       <div class="big" style="margin:8px 0 4px">${esc(sc.nome)}</div>
-      <div class="muted" style="margin-bottom:12px">${sc.esercizi.map(e => esc(e.nome)).join(' • ')}</div>
+      <div class="muted" style="margin-bottom:12px">${sc.esercizi.map(e => esc(e.nome)).join(' • ') || 'Nessun esercizio'}</div>
       <button class="btn primary full" data-action="start" data-s="${s}">Inizia ▶</button></div>`;
   }).join('');
   return `${head('Allenamento', 'Scegli la sessione da fare')}${cards}
+    <button class="btn full" data-action="go" data-view="schede" style="margin-bottom:14px">✏️ Modifica sessioni ed esercizi</button>
     <div class="card"><h3>Storico</h3>${ws.length ? ws.slice(0, 40).map(w => workoutRow(w, true)).join('') : emptyBox('Ancora nessun allenamento')}</div>`;
 }
 
@@ -241,10 +410,52 @@ function viewWorkout() {
   return `${head('Sessione ' + d.session, esc(db.schede[d.session]?.nome || ''))}
     <div class="card"><label class="field" style="margin-top:0">Data</label><input type="date" data-field="date" value="${d.date}"></div>
     ${d.exercises.map((e, i) => exerciseCard(e, i, d.date)).join('')}
+    <div class="card"><h3>🔥 Calorie</h3>
+      <div class="muted" id="kcal-line">${kcalLine(d)}</div>
+      <div class="grid2" style="margin:0">
+        <div><label class="field">Durata (min)</label><input type="number" inputmode="numeric" data-field="durata" value="${esc(d.durata || '')}" placeholder="${durataAuto(d)}"></div>
+        <div><label class="field">Kcal orologio</label><input type="number" inputmode="numeric" data-field="kcalWatch" value="${esc(d.kcalWatch || '')}" placeholder="facoltativo"></div>
+      </div>
+      <div class="muted" style="margin-top:8px">La stima è indicativa. Se inserisci le kcal dell'orologio, verranno usate quelle.</div></div>
     <div class="card"><label class="field" style="margin-top:0">Note allenamento</label>
       <textarea data-field="note" placeholder="Energia, sensazioni, dolori...">${esc(d.note)}</textarea></div>
     <button class="btn primary full" data-action="save-workout" style="margin-bottom:10px">✅ Salva allenamento</button>
     <button class="btn danger full" data-action="cancel-workout">Annulla allenamento</button>`;
+}
+
+function viewSchede() {
+  const keys = Object.keys(db.schede);
+  if (!keys.includes(editS)) editS = keys[0];
+  const sc = db.schede[editS];
+  const tabs = `<div class="seg">${keys.map(k => `<button class="${k === editS ? 'active' : ''}" data-action="edit-s" data-s="${k}">Sessione ${k}</button>`).join('')}
+    <button data-action="add-scheda">＋ Nuova</button></div>`;
+  if (!sc) return `${head('Modifica sessioni')}${tabs}`;
+  const tipoSel = (v, i) => `<select data-sk="tipo" data-i="${i}">${[['carico', 'Con carico'], ['corpo', 'Corpo libero'], ['tempo', 'A tempo']]
+    .map(([k, l]) => `<option value="${k}" ${v === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  const n = sc.esercizi.length;
+  const cards = sc.esercizi.map((e, i) => `<div class="card">
+      <div class="row"><b>${i + 1}. ${esc(e.nome)}</b><div style="display:flex;gap:6px">
+        <button class="btn small" data-action="ex-up" data-i="${i}" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="btn small" data-action="ex-down" data-i="${i}" ${i === n - 1 ? 'disabled' : ''}>↓</button>
+        <button class="btn small danger" data-action="ex-del" data-i="${i}">✕</button></div></div>
+      <label class="field">Nome esercizio</label><input data-sk="nome" data-i="${i}" value="${esc(e.nome)}">
+      <div class="grid2" style="margin:0">
+        <div><label class="field">Gruppo muscolare</label><input data-sk="gruppo" data-i="${i}" value="${esc(e.gruppo)}"></div>
+        <div><label class="field">Tipo</label>${tipoSel(e.tipo, i)}</div>
+        <div><label class="field">Serie</label><input type="number" inputmode="numeric" data-sk="serie" data-i="${i}" value="${esc(e.serie)}"></div>
+        <div><label class="field">Ripetizioni / secondi</label><input data-sk="rip" data-i="${i}" value="${esc(e.rip)}"></div>
+        <div><label class="field">Carico (kg)</label><input data-sk="carico" data-i="${i}" value="${esc(e.carico)}"></div>
+        <div><label class="field">Recupero</label><input data-sk="recupero" data-i="${i}" value="${esc(e.recupero)}" placeholder="90 sec / 2 min"></div>
+      </div>
+      <label class="field">Note</label><input data-sk="note" data-i="${i}" value="${esc(e.note)}" placeholder="Manubri, elastici...">
+    </div>`).join('');
+  return `${head('Modifica sessioni', 'Le modifiche valgono dal prossimo allenamento')}${tabs}
+    <div class="card"><label class="field" style="margin-top:0">Nome della sessione ${editS}</label><input data-sk="sessione-nome" value="${esc(sc.nome)}"></div>
+    ${cards || `<div class="card">${emptyBox('Nessun esercizio in questa sessione')}</div>`}
+    <button class="btn primary full" data-action="ex-add" style="margin-bottom:10px">＋ Aggiungi esercizio</button>
+    ${keys.length > 1 ? `<button class="btn danger full" data-action="del-scheda" style="margin-bottom:10px">🗑️ Elimina sessione ${editS}</button>` : ''}
+    <button class="btn full" data-action="reset-schede" style="margin-bottom:10px">↺ Ripristina schede originali</button>
+    <button class="btn full" data-action="go" data-view="allena">← Torna ad Allena</button>`;
 }
 
 function viewProgressi() {
@@ -278,12 +489,15 @@ function viewStats() {
   const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];
   const g = Object.entries(groups).sort((a, b) => b[1] - a[1]), gmax = g[0][1] || 1;
   const rec = Object.entries(records()).sort((a, b) => b[1].kg - a[1].kg);
+  const conKcal = ws.filter(w => w.kcal), kcalTot = conKcal.reduce((s, w) => s + w.kcal, 0);
   return `${head('Statistiche')}${periodSeg()}
     <div class="grid2">
       ${stat('Allenamenti', ws.length)}
       ${stat('Media a settimana', fmt(ws.length / weeks, 1))}
       ${stat('Volume totale', fmt(vol), 'kg')}
       ${stat('Volume medio', fmt(vol / ws.length), 'kg')}
+      ${stat('Kcal totali', fmt(kcalTot), 'kcal')}
+      ${stat('Kcal medie', conKcal.length ? fmt(kcalTot / conKcal.length) : '—', conKcal.length ? 'kcal' : '')}
       ${stat('Settimane di fila', streakWeeks(), '🔥')}
       ${stat('Più eseguito', `<span style="font-size:15px">${esc(top[0])}</span>`)}
     </div>
@@ -296,6 +510,11 @@ function viewStats() {
 
 function viewProfilo() {
   const s = db.settings, ws = [...db.weights].sort((a, b) => b.date.localeCompare(a.date)), goal = num(s.goal);
+  const nonSync = db.workouts.filter(w => !w.synced).length;
+  const stato = !s.syncUrl ? 'Non collegato'
+    : s.syncError ? `<span class="down">⚠️ ${esc(s.syncError)}</span>`
+    : s.lastSync ? `✅ Ultimo invio: ${new Date(s.lastSync).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`
+    : 'Collegato, nessun invio ancora';
   return `${head('Profilo')}
     <div class="card"><h3>Dati personali</h3>
       <label class="field">Nome</label><input data-setting="name" value="${esc(s.name)}" placeholder="Come ti chiami?">
@@ -307,38 +526,56 @@ function viewProfilo() {
       <button class="btn primary full" style="margin-top:10px" data-action="add-weight">Aggiungi pesata</button>
       ${goal && ws[0] ? `<div class="muted" style="margin-top:12px">Attuale ${fmt(ws[0].kg, 2)} kg • obiettivo ${fmt(goal, 2)} kg • mancano <b>${fmt(goal - ws[0].kg, 2)} kg</b></div>` : ''}
       ${ws.slice(0, 10).map(w => `<div class="list-item"><span>${fmtDateLong(w.date)}</span><span><b>${fmt(w.kg, 2)} kg</b> <button class="btn small danger" data-action="del-weight" data-id="${w.id}">✕</button></span></div>`).join('')}</div>
+    <div class="card"><h3>☁️ Sincronizzazione Fogli Google</h3>
+      <label class="field">Link dello script (finisce con /exec)</label>
+      <input data-setting="syncUrl" value="${esc(s.syncUrl)}" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+      <label class="field">Parola segreta</label>
+      <input data-setting="syncToken" value="${esc(s.syncToken)}" placeholder="La stessa scritta nello script" autocomplete="off">
+      <div class="muted" style="margin:12px 0">${stato}<br>In coda: <b>${db.outbox.length}</b> • Allenamenti non sincronizzati: <b>${nonSync}</b></div>
+      <button class="btn full" data-action="test-sync" style="margin-bottom:8px">🧪 Prova collegamento</button>
+      <button class="btn primary full" data-action="sync-now" style="margin-bottom:8px">🔄 Invia dati al foglio</button>
+      <button class="btn full" data-action="read-sheet">⬇️ Scarica dati dal foglio</button>
+      ${s.lastRead ? `<div class="muted" style="margin-top:8px">Ultima lettura: ${new Date(s.lastRead).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>` : ''}</div>
+    <div class="card"><h3>🏋️ Sessioni</h3>
+      <button class="btn full" data-action="go" data-view="schede">✏️ Modifica sessioni ed esercizi</button></div>
     <div class="card"><h3>💾 Dati e backup</h3>
-      <p class="muted" style="margin-bottom:12px">I dati sono salvati solo su questo telefono. Fai un backup ogni tanto.</p>
+      <p class="muted" style="margin-bottom:12px">I dati sono salvati su questo telefono. Fai un backup ogni tanto.</p>
       <button class="btn full" data-action="export" style="margin-bottom:8px">⬇️ Esporta backup</button>
       <button class="btn full" data-action="import-json" style="margin-bottom:8px">⬆️ Ripristina backup</button>
       <button class="btn full" data-action="import-csv" style="margin-bottom:8px">📄 Importa da Fogli Google (CSV)</button>
       <button class="btn danger full" data-action="reset">🗑️ Cancella tutti i dati</button>
       <input type="file" id="file" accept=".json,.csv,text/csv,application/json" hidden></div>
-    <p class="muted" style="text-align:center">Palestra v1 • ${db.workouts.length} allenamenti salvati</p>`;
+    <p class="muted" style="text-align:center">Palestra v2 • ${db.workouts.length} allenamenti salvati</p>`;
 }
 
-/* ============ 7. AZIONI ============ */
+/* ============ 8. AZIONI ============ */
 function startWorkout(s) {
-  db.draft = { session: s, date: todayISO(), note: '', exercises: db.schede[s].esercizi.map(e => {
-    const last = lastFor(e.nome);
-    return { ...e, sets: Array.from({ length: e.serie }, (_, j) => ({
-      reps: '', done: false,
-      kg: e.tipo === 'carico' ? (last?.ex.sets[j]?.kg ?? last?.ex.sets.at(-1)?.kg ?? num(e.carico) ?? '') : '' })) };
-  }) };
+  db.draft = { session: s, date: todayISO(), note: '', startedAt: Date.now(), durata: '', kcalWatch: '',
+    exercises: db.schede[s].esercizi.map(e => {
+      const last = lastFor(e.nome);
+      return { ...e, sets: Array.from({ length: e.serie }, (_, j) => ({
+        reps: '', done: false,
+        kg: e.tipo === 'carico' ? (last?.ex.sets[j]?.kg ?? last?.ex.sets.at(-1)?.kg ?? num(e.carico) ?? '') : '' })) };
+    }) };
   save(); go('allena');
 }
 function saveWorkout() {
   const d = db.draft;
   const exercises = d.exercises.map(e => ({ nome: e.nome, gruppo: e.gruppo, tipo: e.tipo,
+    serie: e.serie, rip: e.rip, carico: e.carico, recupero: e.recupero, note: e.note || '',
     sets: e.sets.filter(s => num(s.reps) != null).map(s => ({ reps: num(s.reps), kg: e.tipo === 'carico' ? num(s.kg) : null })) }))
     .filter(e => e.sets.length);
   if (!exercises.length) return toast('Inserisci almeno una serie');
+  const durata = durataDraft(d), stima = stimaKcal(durata), watch = num(d.kcalWatch);
   const before = records();
-  db.workouts.push({ id: uid(), date: d.date, session: d.session, exercises, note: d.note, synced: false });
+  const w = { id: uid(), date: d.date, session: d.session, exercises, note: d.note, synced: false,
+    durata, kcalStima: stima, kcal: watch || stima, kcalFonte: watch ? 'orologio' : 'stima' };
+  db.workouts.push(w);
   db.draft = null; save(); stopRest();
   const after = records(), nuovi = Object.keys(after).filter(k => before[k] && after[k].kg > before[k].kg);
   toast(nuovi.length ? `🏆 Nuovo record: ${nuovi.join(', ')}!` : '✅ Allenamento salvato!');
   go('home');
+  queue(workoutPayload(w));
 }
 
 let restTimer = null;
@@ -356,7 +593,17 @@ function startRest(sec) {
 }
 function stopRest() { clearInterval(restTimer); const el = $('#rest'); if (el) el.classList.remove('show'); }
 
-/* ============ 8. IMPORTAZIONE E BACKUP ============ */
+/* Modifica sessioni */
+function nuovoEsercizio() {
+  return { nome: 'Nuovo esercizio', gruppo: '', tipo: 'carico', serie: 3, rip: '10-12', carico: '', recupero: '90 sec', note: '' };
+}
+function prossimaLettera() {
+  const keys = Object.keys(db.schede);
+  for (let c = 65; c <= 90; c++) { const k = String.fromCharCode(c); if (!keys.includes(k)) return k; }
+  return 'S' + keys.length;
+}
+
+/* ============ 9. IMPORTAZIONE E BACKUP ============ */
 function exportJSON() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' }));
@@ -420,8 +667,8 @@ function importCSV(text) {
 let fileMode = 'json';
 function pickFile(mode) { fileMode = mode; const f = $('#file'); f.value = ''; f.click(); }
 
-/* ============ 9. NAVIGAZIONE ED EVENTI ============ */
-const VIEWS = { home: viewHome, allena: viewAllena, progressi: viewProgressi, stats: viewStats, profilo: viewProfilo };
+/* ============ 10. NAVIGAZIONE ED EVENTI ============ */
+const VIEWS = { home: viewHome, allena: viewAllena, progressi: viewProgressi, stats: viewStats, profilo: viewProfilo, schede: viewSchede };
 function render() {
   const app = $('#app'); app.innerHTML = VIEWS[view]();
   app.style.animation = 'none'; void app.offsetHeight; app.style.animation = '';
@@ -440,7 +687,8 @@ function applyTheme() {
 document.addEventListener('click', e => {
   const nav = e.target.closest('#nav button'); if (nav) return go(nav.dataset.view);
   const el = e.target.closest('[data-action]'); if (!el) return;
-  const ex = +el.dataset.ex, set = +el.dataset.set;
+  const ex = +el.dataset.ex, set = +el.dataset.set, i = +el.dataset.i;
+  const sc = db.schede[editS];
   switch (el.dataset.action) {
     case 'go': go(el.dataset.view); break;
     case 'start':
@@ -466,16 +714,60 @@ document.addEventListener('click', e => {
       break;
     case 'toggle-w': openW = openW === el.dataset.id ? null : el.dataset.id; render(); break;
     case 'del-workout':
-      if (confirm('Eliminare questo allenamento?')) { db.workouts = db.workouts.filter(w => w.id !== el.dataset.id); save(); render(); }
+      if (confirm('Eliminare questo allenamento? (Dal foglio Google va cancellato a mano)')) {
+        const id = el.dataset.id;
+        db.workouts = db.workouts.filter(w => w.id !== id);
+        db.outbox = db.outbox.filter(o => !(o.type === 'workout' && o.workout.id === id));
+        save(); render();
+      }
       break;
     case 'period': period = +el.dataset.days; render(); break;
     case 'theme': db.settings.theme = el.dataset.t; save(); applyTheme(); render(); break;
     case 'add-weight': {
       const kg = num($('#w-kg').value), date = $('#w-date').value;
       if (!kg || !date) return toast('Inserisci data e peso');
-      db.weights.push({ id: uid(), date, kg }); save(); render(); toast('Peso salvato'); break;
+      db.weights.push({ id: uid(), date, kg }); save(); render(); toast('Peso salvato');
+      queue({ type: 'weight', date, kg });
+      break;
     }
     case 'del-weight': db.weights = db.weights.filter(w => w.id !== el.dataset.id); save(); render(); break;
+    case 'test-sync': testSync(); break;
+    case 'sync-now': syncNow(); break;
+    case 'read-sheet': scaricaDalFoglio(); break;
+
+    /* Modifica sessioni */
+    case 'edit-s': editS = el.dataset.s; render(); break;
+    case 'add-scheda': {
+      const k = prossimaLettera();
+      db.schede[k] = { nome: 'Nuova sessione', esercizi: [nuovoEsercizio()] };
+      editS = k; save(); render();
+      toast(`Sessione ${k} creata. Per sincronizzarla crea nel foglio una scheda "Sessione ${k}"`);
+      break;
+    }
+    case 'del-scheda':
+      if (Object.keys(db.schede).length > 1 && confirm(`Eliminare la sessione ${editS}? Lo storico degli allenamenti resta.`)) {
+        delete db.schede[editS]; editS = null; save(); render();
+      }
+      break;
+    case 'ex-add':
+      sc.esercizi.push(nuovoEsercizio()); save(); render();
+      window.scrollTo(0, document.body.scrollHeight);
+      break;
+    case 'ex-del':
+      if (confirm(`Togliere "${sc.esercizi[i].nome}" dalla sessione ${editS}?`)) { sc.esercizi.splice(i, 1); save(); render(); }
+      break;
+    case 'ex-up':
+      if (i > 0) { [sc.esercizi[i - 1], sc.esercizi[i]] = [sc.esercizi[i], sc.esercizi[i - 1]]; save(); render(); }
+      break;
+    case 'ex-down':
+      if (i < sc.esercizi.length - 1) { [sc.esercizi[i + 1], sc.esercizi[i]] = [sc.esercizi[i], sc.esercizi[i + 1]]; save(); render(); }
+      break;
+    case 'reset-schede':
+      if (confirm('Ripristinare le schede originali? Le tue modifiche agli esercizi andranno perse.')) {
+        db.schede = copiaSchede(); editS = null; save(); render();
+      }
+      break;
+
     case 'export': exportJSON(); break;
     case 'import-json': pickFile('json'); break;
     case 'import-csv': pickFile('csv'); break;
@@ -493,23 +785,40 @@ document.addEventListener('input', e => {
     const f = t.dataset.field;
     if (f === 'reps' || f === 'kg') db.draft.exercises[+t.dataset.ex].sets[+t.dataset.set][f] = t.value;
     else db.draft[f] = t.value;
+    if (f === 'durata') { const k = $('#kcal-line'); if (k) k.innerHTML = kcalLine(db.draft); }
     save();
   }
   if (t.dataset.setting) { db.settings[t.dataset.setting] = t.value; save(); }
+  if (t.dataset.sk && db.schede[editS]) {
+    const sc = db.schede[editS], k = t.dataset.sk;
+    if (k === 'sessione-nome') sc.nome = t.value;
+    else sc.esercizi[+t.dataset.i][k] = k === 'serie' ? (parseInt(t.value) || 1) : t.value;
+    save();
+  }
 });
 
 document.addEventListener('change', async e => {
   const t = e.target;
   if (t.id === 'ex-select') { chartEx = t.value; render(); }
   if (t.dataset.field === 'date') render();
+  if (t.dataset.sk === 'tipo') render();
   if (t.id === 'file' && t.files[0]) {
     const text = await t.files[0].text();
     fileMode === 'csv' ? importCSV(text) : importJSON(text);
   }
 });
 
-/* ============ 10. AVVIO ============ */
+/* ============ 11. AVVIO ============ */
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+/* All'apertura: prima invia quello che è in coda, poi rilegge il foglio (al massimo ogni 10 minuti) */
+async function aggiornaTutto() {
+  await flush();
+  const ultima = db.settings.lastRead ? Date.now() - new Date(db.settings.lastRead) : Infinity;
+  if (ultima > 10 * 60 * 1000 && navigator.onLine) scaricaDalFoglio(true);
+}
+window.addEventListener('online', aggiornaTutto);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') aggiornaTutto(); });
 render();
+aggiornaTutto();
