@@ -3,24 +3,37 @@
 /* ============ 1. LE TUE SCHEDE ============ */
 const SCHEDE_DEFAULT = {
   A: { nome: 'Petto • Spalle • Tricipiti', esercizi: [
-    { nome: 'Panca Piana', gruppo: 'Petto', tipo: 'carico', serie: 3, rip: '10-12', carico: '30', recupero: '2 min' },
-    { nome: 'Croci su Panca', gruppo: 'Petto', tipo: 'carico', serie: 3, rip: '10-12', carico: '10', recupero: '90 sec', note: 'Manubri' },
-    { nome: 'Alzate Laterali', gruppo: 'Spalle', tipo: 'carico', serie: 3, rip: '10-12', carico: '2', recupero: '2 min' },
-    { nome: 'Estensioni Tricipiti', gruppo: 'Tricipiti', tipo: 'carico', serie: 3, rip: '10-15', carico: '4', recupero: '90 sec', note: 'Elastici' },
+    { nome: 'Panca Piana', gruppo: 'Petto', tipo: 'carico', serie: 3, rip: '8-12', carico: '38', recupero: '2 min', note: 'Bilanciere' },
+    { nome: 'Croci su Panca', gruppo: 'Petto', tipo: 'carico', serie: 3, rip: '10-12', carico: '10', recupero: '90 sec', note: 'Manubri • discesa in 3 sec' },
+    { nome: 'Alzate Laterali', gruppo: 'Spalle', tipo: 'carico', serie: 3, rip: '12-15', carico: '2.5', recupero: '60 sec', note: 'Manubri • pausa in alto, discesa in 3 sec' },
+    { nome: 'Pushdown Corda', gruppo: 'Tricipiti', tipo: 'carico', serie: 3, rip: '10-15', carico: '10', recupero: '60 sec', note: 'Carrucola alta • corda' },
   ]},
   B: { nome: 'Schiena • Bicipiti • Spalle post.', esercizi: [
-    { nome: 'Rematore Bilanciere', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '8-10', carico: '', recupero: '2 min', note: 'Bilanciere' },
-    { nome: 'Rematore manubrio', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '8-10', carico: '', recupero: '2 min' },
-    { nome: 'Curl Manubri', gruppo: 'Bicipiti', tipo: 'carico', serie: 3, rip: '10-12', carico: '8', recupero: '90 sec', note: 'Manubri' },
-    { nome: 'Face Pull', gruppo: 'Spalle post.', tipo: 'carico', serie: 3, rip: '12', carico: '2', recupero: '2 min', note: 'Manubri' },
+    { nome: 'Rematore Bilanciere', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '8-12', carico: '38', recupero: '2 min', note: 'Bilanciere' },
+    { nome: 'Lat Machine Cavo', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '10-12', carico: '15', recupero: '90 sec', note: 'Carrucola alta • in ginocchio' },
+    { nome: 'Curl Manubri', gruppo: 'Bicipiti', tipo: 'carico', serie: 3, rip: '8-12', carico: '10', recupero: '90 sec', note: 'Manubri' },
+    { nome: 'Face Pull Cavo', gruppo: 'Spalle post.', tipo: 'carico', serie: 3, rip: '12-15', carico: '5', recupero: '60 sec', note: 'Carrucola alta • corda' },
   ]},
   C: { nome: 'Richiamo e Core', esercizi: [
     { nome: 'Piegamenti', gruppo: 'Petto', tipo: 'corpo', serie: 3, rip: 'Max (15x2)', carico: '', recupero: '90 sec' },
-    { nome: 'Pullover', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '10-12', carico: '', recupero: '90 sec', note: 'Bilanciere' },
-    { nome: 'Hammer Curl', gruppo: 'Bicipiti', tipo: 'carico', serie: 3, rip: '10-12', carico: '8', recupero: '2 min' },
-    { nome: 'Plank', gruppo: 'Core', tipo: 'tempo', serie: 3, rip: '45-60', carico: '', recupero: '80 sec' },
+    { nome: 'Pullover Cavo', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '12-15', carico: '10', recupero: '60 sec', note: 'Carrucola alta • braccia tese' },
+    { nome: 'Hammer Curl', gruppo: 'Bicipiti', tipo: 'carico', serie: 3, rip: '10-12', carico: '8', recupero: '90 sec' },
+    { nome: 'Plank', gruppo: 'Core', tipo: 'tempo', serie: 3, rip: '45-60', carico: '', recupero: '60 sec' },
   ]},
 };
+/* Esercizi del vecchio programma: servono solo a riconoscere lo storico (gruppo muscolare e sessione) */
+const ESERCIZI_STORICI = {
+  A: [{ nome: 'Estensioni Tricipiti', gruppo: 'Tricipiti', tipo: 'carico' }],
+  B: [{ nome: 'Rematore manubrio', gruppo: 'Schiena', tipo: 'carico' }, { nome: 'Face Pull', gruppo: 'Spalle post.', tipo: 'carico' }],
+  C: [{ nome: 'Pullover', gruppo: 'Schiena', tipo: 'carico' }],
+};
+function infoEsercizi() {
+  const info = {}, sesOf = {};
+  const add = (k, e) => { info[e.nome.toLowerCase()] = e; sesOf[e.nome.toLowerCase()] = k; };
+  Object.entries(ESERCIZI_STORICI).forEach(([k, l]) => l.forEach(e => add(k, e)));
+  Object.entries(db.schede).forEach(([k, sc]) => sc.esercizi.forEach(e => add(k, e)));
+  return { info, sesOf };
+}
 const copiaSchede = () => JSON.parse(JSON.stringify(SCHEDE_DEFAULT));
 
 /* Calorie: MET per allenamento con i pesi (≈300 kcal/ora a 73 kg) e peso corporeo di riserva.
@@ -236,8 +249,7 @@ async function scaricaDalFoglio(silenzioso = false) {
   } catch (e) { reading = false; return silenzioso ? null : toast(`⚠️ ${e.message || e}`); }
   reading = false;
 
-  const info = {};
-  Object.values(db.schede).forEach(sc => sc.esercizi.forEach(e => { info[e.nome.toLowerCase()] = e; }));
+  const { info } = infoEsercizi();
   const gruppi = {};
   r.righe.forEach(x => {
     const key = x.date + '|' + x.session;
@@ -645,8 +657,7 @@ function importCSV(text) {
   const iD = hd.indexOf('data'), iS = hd.indexOf('sessione'), iE = hd.indexOf('esercizio');
   const iR = [1, 2, 3, 4, 5].map(n => hd.findIndex(x => new RegExp('^rip\\.?\\s*' + n + '$').test(x)));
   const iK = [1, 2, 3, 4, 5].map(n => hd.findIndex(x => new RegExp('^(kg|peso)\\s*' + n).test(x)));
-  const info = {}, sesOf = {};
-  Object.entries(db.schede).forEach(([k, sc]) => sc.esercizi.forEach(e => { info[e.nome.toLowerCase()] = e; sesOf[e.nome.toLowerCase()] = k; }));
+  const { info, sesOf } = infoEsercizi();
   const groups = {};
   rows.slice(h + 1).forEach(r => {
     const date = parseDateIT(r[iD]), nome = (r[iE] || '').trim();
