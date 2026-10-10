@@ -30,6 +30,7 @@ const ESERCIZI_STORICI = {
 function infoEsercizi() {
   const info = {}, sesOf = {};
   const add = (k, e) => { info[e.nome.toLowerCase()] = e; sesOf[e.nome.toLowerCase()] = k; };
+  LIBRERIA.forEach(e => { info[e.nome.toLowerCase()] = e; });
   Object.entries(ESERCIZI_STORICI).forEach(([k, l]) => l.forEach(e => add(k, e)));
   Object.entries(db.schede).forEach(([k, sc]) => sc.esercizi.forEach(e => add(k, e)));
   return { info, sesOf };
@@ -41,14 +42,194 @@ const copiaSchede = () => JSON.parse(JSON.stringify(SCHEDE_DEFAULT));
 const MET_PESI = 4;
 const PESO_DEFAULT = 73;
 
+/* ============ LIBRERIA ESERCIZI ============ */
+/* Esercizi fattibili con la tua attrezzatura: bilanciere, panca piana, manubri, carrucola alta, elastici, corpo libero */
+const LIBRERIA = [
+  // PETTO
+  { nome: 'Panca Piana', gruppo: 'Petto', attrezzo: 'Bilanciere', tipo: 'carico', rip: '8-12', recupero: '2 min',
+    muscoli: 'Pettorali, deltoidi anteriori, tricipiti',
+    esecuzione: ['Sdraiati con gli occhi sotto il bilanciere, scapole strette e piedi ben piantati.', 'Impugna poco più larga delle spalle e scendi controllato fino a sfiorare il petto, sotto i capezzoli.', 'Spingi in alto e leggermente indietro, senza staccare i glutei dalla panca.'],
+    errori: ['Gomiti aperti a 90° rispetto al busto: tienili a circa 45-60°.', 'Rimbalzare il bilanciere sul petto.'] },
+  { nome: 'Distensioni Manubri', gruppo: 'Petto', attrezzo: 'Manubri', tipo: 'carico', rip: '8-12', recupero: '2 min',
+    muscoli: 'Pettorali, deltoidi anteriori, tricipiti',
+    esecuzione: ['Sdraiati con i manubri all\'altezza del petto, palmi verso i piedi.', 'Spingi in alto avvicinando i manubri senza farli sbattere.', 'Scendi lento finché senti l\'allungamento del petto.'],
+    errori: ['Scendere troppo poco: perdi la parte migliore del movimento.', 'Inarcare troppo la schiena.'] },
+  { nome: 'Croci su Panca', gruppo: 'Petto', attrezzo: 'Manubri', tipo: 'carico', rip: '10-12', recupero: '90 sec',
+    muscoli: 'Pettorali',
+    esecuzione: ['Sdraiato, manubri sopra il petto con i gomiti leggermente piegati.', 'Apri le braccia ad arco mantenendo fisso l\'angolo del gomito.', 'Richiudi "abbracciando" un albero, stringendo il petto in alto.'],
+    errori: ['Piegare e stendere i gomiti: diventa una distensione.', 'Scendere troppo con carichi alti: stress sulla spalla.'] },
+  { nome: 'Croci al Cavo', gruppo: 'Petto', attrezzo: 'Carrucola alta', tipo: 'carico', rip: '12-15', recupero: '60 sec',
+    muscoli: 'Pettorali (parte bassa)',
+    esecuzione: ['Di lato alla carrucola, impugna la maniglia con il braccio più vicino al cavo.', 'Busto leggermente inclinato in avanti, gomito appena piegato.', 'Porta la mano verso il basso e davanti all\'ombelico, poi torna controllato. Fai tutte le ripetizioni e cambia lato.'],
+    errori: ['Ruotare il busto per aiutarti.', 'Tirare con il bicipite invece di "abbracciare".'] },
+  { nome: 'Piegamenti', gruppo: 'Petto', attrezzo: 'Corpo libero', tipo: 'corpo', rip: 'Max', recupero: '90 sec',
+    muscoli: 'Pettorali, tricipiti, deltoidi anteriori, core',
+    esecuzione: ['Mani poco più larghe delle spalle, corpo in linea dalla testa ai talloni.', 'Scendi finché il petto è a pochi centimetri da terra.', 'Spingi via il pavimento mantenendo addome e glutei contratti.'],
+    errori: ['Bacino che cede verso il basso.', 'Mezze ripetizioni.'] },
+  { nome: 'Piegamenti Piedi Rialzati', gruppo: 'Petto', attrezzo: 'Corpo libero', tipo: 'corpo', rip: 'Max', recupero: '90 sec',
+    muscoli: 'Pettorali (parte alta), deltoidi anteriori, tricipiti',
+    esecuzione: ['Piedi sulla panca, mani a terra poco più larghe delle spalle.', 'Scendi controllato tenendo il corpo dritto.', 'Più alti sono i piedi, più lavora la parte alta del petto.'],
+    errori: ['Bacino troppo alto a "tetto".', 'Collo proteso verso il pavimento.'] },
+
+  // SCHIENA
+  { nome: 'Rematore Bilanciere', gruppo: 'Schiena', attrezzo: 'Bilanciere', tipo: 'carico', rip: '8-12', recupero: '2 min',
+    muscoli: 'Dorsali, romboidi, trapezio, deltoidi posteriori, bicipiti',
+    esecuzione: ['Ginocchia morbide, busto inclinato a circa 45°, schiena neutra.', 'Tira il bilanciere verso l\'ombelico portando i gomiti indietro.', 'Stringi le scapole in alto e scendi controllato.'],
+    errori: ['Schiena curva: riduci il carico.', 'Usare lo slancio del busto per tirare su.'] },
+  { nome: 'Rematore manubrio', gruppo: 'Schiena', attrezzo: 'Manubri', tipo: 'carico', rip: '8-12', recupero: '90 sec',
+    muscoli: 'Dorsali, romboidi, deltoidi posteriori, bicipiti',
+    esecuzione: ['Mano e ginocchio dello stesso lato sulla panca, schiena piatta.', 'Tira il manubrio verso l\'anca, gomito vicino al corpo.', 'Scendi fino ad allungare bene il dorsale.'],
+    errori: ['Ruotare il busto per alzare di più.', 'Tirare verso la spalla invece che verso l\'anca.'] },
+  { nome: 'Lat Machine Cavo', gruppo: 'Schiena', attrezzo: 'Carrucola alta', tipo: 'carico', rip: '10-12', recupero: '90 sec',
+    muscoli: 'Gran dorsale, bicipiti, romboidi',
+    esecuzione: ['In ginocchio sotto la carrucola, busto appena inclinato indietro.', 'Tira la corda o la maniglia verso il petto portando i gomiti giù e indietro.', 'Risali lento lasciando allungare bene le braccia in alto.'],
+    errori: ['Tirare solo con le braccia: pensa a "mettere i gomiti in tasca".', 'Dondolare col busto.'] },
+  { nome: 'Lat Machine un Braccio', gruppo: 'Schiena', attrezzo: 'Carrucola alta', tipo: 'carico', rip: '10-12', recupero: '60 sec',
+    muscoli: 'Gran dorsale',
+    esecuzione: ['In ginocchio, maniglia in una mano sopra la testa.', 'Porta il gomito verso il fianco, ruotando leggermente il palmo verso di te.', 'Risali lento fino all\'allungamento completo. Cambia lato.'],
+    errori: ['Inclinare tutto il busto di lato.', 'Accorciare la risalita.'] },
+  { nome: 'Pullover Cavo', gruppo: 'Schiena', attrezzo: 'Carrucola alta', tipo: 'carico', rip: '12-15', recupero: '60 sec',
+    muscoli: 'Gran dorsale, capo lungo del tricipite',
+    esecuzione: ['In piedi davanti alla carrucola, busto inclinato in avanti, braccia tese in alto con la corda.', 'Porta le mani verso le cosce ad arco, braccia quasi tese.', 'Torna su lento senza piegare i gomiti.'],
+    errori: ['Piegare i gomiti: diventa un pushdown.', 'Usare il busto per spingere giù.'] },
+  { nome: 'Pullover', gruppo: 'Schiena', attrezzo: 'Manubri', tipo: 'carico', rip: '10-12', recupero: '90 sec',
+    muscoli: 'Gran dorsale, pettorali, tricipiti',
+    esecuzione: ['Sdraiato sulla panca, un manubrio tenuto a due mani sopra il petto.', 'Portalo dietro la testa ad arco, gomiti leggermente piegati.', 'Riportalo sopra il petto contraendo i dorsali.'],
+    errori: ['Scendere troppo con le spalle rigide.', 'Inarcare la schiena.'] },
+  { nome: 'Trazioni', gruppo: 'Schiena', attrezzo: 'Corpo libero', tipo: 'corpo', rip: 'Max', recupero: '2 min',
+    muscoli: 'Gran dorsale, bicipiti, romboidi',
+    esecuzione: ['Solo quando il telaio è stabile per reggere il tuo peso.', 'Appeso con presa poco più larga delle spalle, scapole attive.', 'Sali portando il petto verso la sbarra, scendi fino a braccia tese. Puoi aiutarti con un elastico.'],
+    errori: ['Slanciarsi con le gambe.', 'Fermarsi a metà discesa.'] },
+
+  // SPALLE
+  { nome: 'Military Press', gruppo: 'Spalle', attrezzo: 'Bilanciere', tipo: 'carico', rip: '8-10', recupero: '2 min',
+    muscoli: 'Deltoidi anteriori e laterali, tricipiti',
+    esecuzione: ['In piedi, bilanciere sulle clavicole, glutei e addome contratti.', 'Spingi in verticale spostando la testa indietro per far passare il bilanciere.', 'Chiudi con il bilanciere sopra la testa e scendi controllato.'],
+    errori: ['Inarcare la zona lombare.', 'Spingere in avanti invece che in verticale.'] },
+  { nome: 'Shoulder Press Manubri', gruppo: 'Spalle', attrezzo: 'Manubri', tipo: 'carico', rip: '8-12', recupero: '90 sec',
+    muscoli: 'Deltoidi anteriori e laterali, tricipiti',
+    esecuzione: ['Seduto sulla panca, manubri all\'altezza delle orecchie.', 'Spingi in alto avvicinandoli senza farli toccare.', 'Scendi fino a circa l\'altezza del mento.'],
+    errori: ['Inarcare la schiena per spingere.', 'Scendere troppo poco.'] },
+  { nome: 'Alzate Laterali', gruppo: 'Spalle', attrezzo: 'Manubri', tipo: 'carico', rip: '12-15', recupero: '60 sec',
+    muscoli: 'Deltoidi laterali',
+    esecuzione: ['In piedi, manubri lungo i fianchi, busto appena inclinato in avanti.', 'Alza le braccia di lato fino all\'altezza delle spalle, gomiti leggermente piegati.', 'Pausa di un secondo in alto e scendi in 3 secondi.'],
+    errori: ['Slanciare con il busto.', 'Alzare le spalle verso le orecchie.'] },
+  { nome: 'Alzate Laterali Elastico', gruppo: 'Spalle', attrezzo: 'Elastici', tipo: 'carico', rip: '15-20', recupero: '60 sec',
+    muscoli: 'Deltoidi laterali',
+    esecuzione: ['Pesta l\'elastico con il piede opposto al braccio che lavora.', 'Alza il braccio di lato fino all\'altezza della spalla.', 'Scendi lento resistendo alla tensione.'],
+    errori: ['Lasciar tornare l\'elastico di colpo.', 'Piegare troppo il gomito.'] },
+  { nome: 'Face Pull Cavo', gruppo: 'Spalle post.', attrezzo: 'Carrucola alta', tipo: 'carico', rip: '12-15', recupero: '60 sec',
+    muscoli: 'Deltoidi posteriori, cuffia dei rotatori, trapezio medio',
+    esecuzione: ['Carrucola all\'altezza della fronte o poco sopra, corda impugnata con i pollici verso di te.', 'Tira verso il viso aprendo la corda e portando le mani ai lati delle orecchie.', 'Gomiti alti, stringi le scapole e torna controllato.'],
+    errori: ['Gomiti bassi: diventa un rematore.', 'Usare un carico troppo pesante.'] },
+  { nome: 'Alzate Posteriori', gruppo: 'Spalle post.', attrezzo: 'Manubri', tipo: 'carico', rip: '12-15', recupero: '60 sec',
+    muscoli: 'Deltoidi posteriori, romboidi',
+    esecuzione: ['Busto inclinato quasi parallelo a terra, manubri sotto il petto.', 'Apri le braccia di lato con i gomiti leggermente piegati.', 'Fermati all\'altezza delle spalle e scendi lento.'],
+    errori: ['Stringere troppo le scapole: deve lavorare la spalla.', 'Usare lo slancio.'] },
+
+  // BICIPITI
+  { nome: 'Curl Manubri', gruppo: 'Bicipiti', attrezzo: 'Manubri', tipo: 'carico', rip: '8-12', recupero: '90 sec',
+    muscoli: 'Bicipiti, brachiale',
+    esecuzione: ['In piedi, manubri lungo i fianchi, palmi in avanti.', 'Piega i gomiti tenendoli fermi vicino al corpo.', 'Stringi in alto e scendi in 2-3 secondi fino a braccio teso.'],
+    errori: ['Portare avanti i gomiti.', 'Dondolare con la schiena.'] },
+  { nome: 'Curl Bilanciere', gruppo: 'Bicipiti', attrezzo: 'Bilanciere', tipo: 'carico', rip: '8-12', recupero: '90 sec',
+    muscoli: 'Bicipiti',
+    esecuzione: ['Presa alla larghezza delle spalle, palmi in avanti.', 'Sali tenendo i gomiti fermi ai fianchi.', 'Scendi controllato senza appoggiare il bilanciere alle cosce.'],
+    errori: ['Slancio con le anche.', 'Polsi piegati all\'indietro.'] },
+  { nome: 'Hammer Curl', gruppo: 'Bicipiti', attrezzo: 'Manubri', tipo: 'carico', rip: '10-12', recupero: '90 sec',
+    muscoli: 'Brachiale, brachioradiale, bicipiti',
+    esecuzione: ['Manubri con palmi rivolti verso le cosce, come se tenessi un martello.', 'Sali tenendo i gomiti fermi.', 'Scendi lento fino a braccio teso.'],
+    errori: ['Ruotare i polsi durante il movimento.', 'Alzare le spalle.'] },
+  { nome: 'Curl Concentrato', gruppo: 'Bicipiti', attrezzo: 'Manubri', tipo: 'carico', rip: '10-12', recupero: '60 sec',
+    muscoli: 'Bicipiti',
+    esecuzione: ['Seduto sulla panca, gomito appoggiato all\'interno della coscia.', 'Porta il manubrio verso la spalla contraendo forte in alto.', 'Scendi lento fino a braccio teso. Cambia lato.'],
+    errori: ['Staccare il gomito dalla coscia.', 'Aiutarsi con il busto.'] },
+
+  // TRICIPITI
+  { nome: 'Pushdown Corda', gruppo: 'Tricipiti', attrezzo: 'Carrucola alta', tipo: 'carico', rip: '10-15', recupero: '60 sec',
+    muscoli: 'Tricipiti',
+    esecuzione: ['In piedi davanti alla carrucola, gomiti attaccati ai fianchi.', 'Spingi la corda in basso fino a braccia tese, aprendo le mani in fondo.', 'Risali fino a circa 90° senza muovere i gomiti.'],
+    errori: ['Gomiti che si allargano o vanno avanti.', 'Buttare il peso del corpo sulla corda.'] },
+  { nome: 'Estensioni sopra la Testa al Cavo', gruppo: 'Tricipiti', attrezzo: 'Carrucola alta', tipo: 'carico', rip: '10-15', recupero: '60 sec',
+    muscoli: 'Tricipiti (soprattutto capo lungo)',
+    esecuzione: ['Di spalle alla carrucola, corda dietro la testa, busto inclinato in avanti.', 'Stendi le braccia in avanti e in alto.', 'Torna indietro lento sentendo l\'allungamento del tricipite.'],
+    errori: ['Gomiti troppo aperti.', 'Muovere le spalle invece dei gomiti.'] },
+  { nome: 'French Press Manubrio', gruppo: 'Tricipiti', attrezzo: 'Manubri', tipo: 'carico', rip: '10-12', recupero: '90 sec',
+    muscoli: 'Tricipiti',
+    esecuzione: ['Seduto, un manubrio tenuto a due mani sopra la testa.', 'Scendi dietro la nuca piegando solo i gomiti.', 'Risali a braccia tese.'],
+    errori: ['Gomiti che si aprono molto.', 'Inarcare la schiena.'] },
+  { nome: 'Estensioni Tricipiti', gruppo: 'Tricipiti', attrezzo: 'Elastici', tipo: 'carico', rip: '10-15', recupero: '90 sec',
+    muscoli: 'Tricipiti',
+    esecuzione: ['Elastico fissato in alto oppure pestato sotto i piedi per la versione sopra la testa.', 'Stendi le braccia tenendo fermi i gomiti.', 'Torna lento resistendo all\'elastico.'],
+    errori: ['Lasciar tornare l\'elastico di colpo.', 'Muovere le spalle.'] },
+  { nome: 'Panca Presa Stretta', gruppo: 'Tricipiti', attrezzo: 'Bilanciere', tipo: 'carico', rip: '8-10', recupero: '2 min',
+    muscoli: 'Tricipiti, pettorali',
+    esecuzione: ['Come la panca piana ma con le mani alla larghezza delle spalle.', 'Scendi con i gomiti vicini al corpo fino alla parte bassa del petto.', 'Spingi in alto concentrandoti sui tricipiti.'],
+    errori: ['Presa troppo stretta: stress sui polsi.', 'Gomiti aperti.'] },
+
+  // CORE
+  { nome: 'Plank', gruppo: 'Core', attrezzo: 'Corpo libero', tipo: 'tempo', rip: '45-60', recupero: '60 sec',
+    muscoli: 'Addominali, core',
+    esecuzione: ['Avambracci a terra sotto le spalle, corpo in linea.', 'Contrai addome e glutei, come se aspettassi un pugno nello stomaco.', 'Respira normalmente e tieni la posizione.'],
+    errori: ['Bacino troppo alto o che cede.', 'Trattenere il respiro.'] },
+  { nome: 'Plank Laterale', gruppo: 'Core', attrezzo: 'Corpo libero', tipo: 'tempo', rip: '30-45', recupero: '60 sec',
+    muscoli: 'Obliqui, core',
+    esecuzione: ['Sul fianco, avambraccio a terra sotto la spalla.', 'Alza il bacino fino a formare una linea dritta.', 'Tieni la posizione e cambia lato.'],
+    errori: ['Bacino che scende.', 'Spalla lontana dal gomito.'] },
+  { nome: 'Crunch al Cavo', gruppo: 'Core', attrezzo: 'Carrucola alta', tipo: 'carico', rip: '12-15', recupero: '60 sec',
+    muscoli: 'Retto dell\'addome',
+    esecuzione: ['In ginocchio davanti alla carrucola, corda ai lati della testa.', 'Arrotola il busto portando i gomiti verso le cosce.', 'Torna su lento senza muovere le anche.'],
+    errori: ['Tirare con le braccia.', 'Sedersi sui talloni invece di flettere il busto.'] },
+  { nome: 'Dead Bug', gruppo: 'Core', attrezzo: 'Corpo libero', tipo: 'corpo', rip: '10-12 per lato', recupero: '60 sec',
+    muscoli: 'Core, addominali profondi',
+    esecuzione: ['Supino, braccia verso il soffitto e gambe a 90°.', 'Allunga un braccio e la gamba opposta tenendo la schiena a terra.', 'Torna al centro e cambia lato.'],
+    errori: ['Schiena che si stacca da terra.', 'Andare veloce.'] },
+
+  // GAMBE (occasionali, il calcio fa già il grosso)
+  { nome: 'Squat', gruppo: 'Gambe', attrezzo: 'Bilanciere', tipo: 'carico', rip: '8-10', recupero: '2 min',
+    muscoli: 'Quadricipiti, glutei, core',
+    esecuzione: ['Bilanciere sui trapezi, piedi alla larghezza delle spalle.', 'Scendi spingendo indietro le anche e aprendo le ginocchia.', 'Risali spingendo con tutto il piede.'],
+    errori: ['Ginocchia che cedono verso l\'interno.', 'Talloni che si staccano.'] },
+  { nome: 'Affondi Manubri', gruppo: 'Gambe', attrezzo: 'Manubri', tipo: 'carico', rip: '10 per gamba', recupero: '90 sec',
+    muscoli: 'Quadricipiti, glutei',
+    esecuzione: ['Manubri lungo i fianchi, fai un passo lungo in avanti.', 'Scendi finché il ginocchio dietro sfiora terra.', 'Spingi con la gamba davanti per tornare su.'],
+    errori: ['Passo troppo corto.', 'Busto che crolla in avanti.'] },
+];
+const ATTREZZI = ['Bilanciere', 'Manubri', 'Carrucola alta', 'Elastici', 'Corpo libero'];
+const libDi = nome => LIBRERIA.find(x => x.nome.toLowerCase() === String(nome || '').toLowerCase());
+
 /* ============ 2. SALVATAGGIO SUL TELEFONO ============ */
 const KEY = 'palestra-dati';
+/* Porta qualsiasi data (es. "2026-10-06T08:00:00.000Z", "06/10/2026") al formato AAAA-MM-GG.
+   Restituisce null se non è una data (es. "Da fare"). */
+function normDate(v) {
+  if (v == null) return null;
+  const s = String(v).trim(), pad = n => String(n).padStart(2, '0');
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if (!/\d{4}/.test(s)) return null;
+  const d = new Date(s);
+  if (isNaN(d)) return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+/* Sistema le date salvate e toglie le righe senza data valida o doppie */
+function pulisciAllenamenti(list) {
+  const out = {};
+  (list || []).forEach(w => {
+    const date = normDate(w.date); if (!date) return;
+    const x = { ...w, date }, k = date + '|' + x.session, old = out[k];
+    const nSet = y => (y.exercises || []).reduce((t, e) => t + (e.sets || []).length, 0);
+    if (!old || (old.synced && !x.synced) || (old.synced === x.synced && nSet(x) > nSet(old))) out[k] = x;
+  });
+  return Object.values(out);
+}
 function migrate(d) {
   return {
     version: 2,
-    workouts: d.workouts || [],
-    weights: d.weights || [],
-    settings: { name: '', theme: 'auto', goal: '', syncUrl: '', syncToken: '', lastSync: '', syncError: '', lastRead: '', ...(d.settings || {}) },
+    workouts: pulisciAllenamenti(d.workouts),
+    weights: (d.weights || []).map(p => ({ ...p, date: normDate(p.date) })).filter(p => p.date),
+    settings: { name: '', theme: 'auto', accent: 'viola', goal: '', syncUrl: '', syncToken: '', lastSync: '', syncError: '', lastRead: '', ...(d.settings || {}) },
     schede: d.schede || copiaSchede(),
     draft: d.draft || null,
     outbox: d.outbox || [],
@@ -252,6 +433,8 @@ async function scaricaDalFoglio(silenzioso = false) {
   const { info } = infoEsercizi();
   const gruppi = {};
   r.righe.forEach(x => {
+    x = { ...x, date: normDate(x.date) };
+    if (!x.date) return;
     const key = x.date + '|' + x.session;
     const sets = x.sets.map(s => ({ reps: num(s.reps), kg: num(s.kg) })).filter(s => s.reps != null);
     if (!sets.length) return;
@@ -284,8 +467,8 @@ async function scaricaDalFoglio(silenzioso = false) {
   });
   const datePesi = new Set(db.weights.map(p => p.date));
   let pesiNuovi = 0;
-  (r.pesi || []).forEach(p => { const kg = num(p.kg);
-    if (kg && !datePesi.has(p.date)) { db.weights.push({ id: uid(), date: p.date, kg }); datePesi.add(p.date); pesiNuovi++; } });
+  (r.pesi || []).forEach(p => { const kg = num(p.kg); p = { ...p, date: normDate(p.date) };
+    if (kg && p.date && !datePesi.has(p.date)) { db.weights.push({ id: uid(), date: p.date, kg }); datePesi.add(p.date); pesiNuovi++; } });
 
   const dash = r.dashboard || {};
   if (!db.settings.goal && num(dash.obiettivo)) db.settings.goal = String(num(dash.obiettivo));
@@ -333,6 +516,7 @@ function barChart(items) {
 
 /* ============ 7. SCHERMATE ============ */
 let view = 'home', period = 30, chartEx = null, openW = null, editS = null;
+let libGruppo = 'Tutti', libQuery = '', libOpen = null, libFrom = 'allena';
 const PERIODI = [[7, '7g'], [30, '30g'], [90, '3m'], [180, '6m'], [365, '1a'], [0, 'Tutto']];
 const periodSeg = () => `<div class="seg">${PERIODI.map(([d, l]) => `<button class="${period === d ? 'active' : ''}" data-action="period" data-days="${d}">${l}</button>`).join('')}</div>`;
 const stat = (label, value, unit = '', extra = '') => `<div class="card stat"><div class="label">${label}</div><div class="value">${value} <small>${unit}</small></div>${extra}</div>`;
@@ -391,7 +575,10 @@ function viewAllena() {
       <button class="btn primary full" data-action="start" data-s="${s}">Inizia ▶</button></div>`;
   }).join('');
   return `${head('Allenamento', 'Scegli la sessione da fare')}${cards}
-    <button class="btn full" data-action="go" data-view="schede" style="margin-bottom:14px">✏️ Modifica sessioni ed esercizi</button>
+    <div class="grid2">
+      <button class="btn full" data-action="go" data-view="schede">✏️ Modifica sessioni</button>
+      <button class="btn full" data-action="lib-open" data-from="allena">📚 Libreria esercizi</button>
+    </div>
     <div class="card"><h3>Storico</h3>${ws.length ? ws.slice(0, 40).map(w => workoutRow(w, true)).join('') : emptyBox('Ancora nessun allenamento')}</div>`;
 }
 
@@ -411,7 +598,8 @@ function exerciseCard(e, i, date) {
       ${e.tipo === 'carico' ? `<input type="number" inputmode="decimal" step="0.25" data-field="kg" data-ex="${i}" data-set="${j}" value="${esc(s.kg)}">` : '<span class="muted" style="text-align:center">—</span>'}
       <button class="done ${s.done ? 'ok' : ''}" data-action="done" data-ex="${i}" data-set="${j}">✓</button></div>`).join('');
   return `<div class="card exercise">
-    <div class="ex-head"><div><div class="ex-name">${esc(e.nome)}</div><div class="ex-meta">${meta}</div></div><span class="chip">${esc(e.gruppo)}</span></div>
+    <div class="ex-head"><div><div class="ex-name">${esc(e.nome)}</div><div class="ex-meta">${meta}</div></div>
+      <div class="ex-tags"><span class="chip">${esc(e.gruppo)}</span>${libDi(e.nome) ? `<button class="info-btn" data-action="lib-info" data-nome="${esc(e.nome)}" aria-label="Come si fa">ℹ️</button>` : ''}</div></div>
     ${info}${hint}
     <div class="set-labels"><span>Serie</span><span>${e.tipo === 'tempo' ? 'Secondi' : 'Ripetizioni'}</span><span>${e.tipo === 'carico' ? 'Kg' : ''}</span><span></span></div>
     ${rows}<button class="btn small" data-action="add-set" data-ex="${i}">+ Serie</button></div>`;
@@ -464,7 +652,10 @@ function viewSchede() {
   return `${head('Modifica sessioni', 'Le modifiche valgono dal prossimo allenamento')}${tabs}
     <div class="card"><label class="field" style="margin-top:0">Nome della sessione ${editS}</label><input data-sk="sessione-nome" value="${esc(sc.nome)}"></div>
     ${cards || `<div class="card">${emptyBox('Nessun esercizio in questa sessione')}</div>`}
-    <button class="btn primary full" data-action="ex-add" style="margin-bottom:10px">＋ Aggiungi esercizio</button>
+    <div class="grid2" style="margin-bottom:10px">
+      <button class="btn primary full" data-action="ex-add">＋ Nuovo esercizio</button>
+      <button class="btn full" data-action="lib-open" data-from="schede">📚 Dalla libreria</button>
+    </div>
     ${keys.length > 1 ? `<button class="btn danger full" data-action="del-scheda" style="margin-bottom:10px">🗑️ Elimina sessione ${editS}</button>` : ''}
     <button class="btn full" data-action="reset-schede" style="margin-bottom:10px">↺ Ripristina schede originali</button>
     <button class="btn full" data-action="go" data-view="allena">← Torna ad Allena</button>`;
@@ -532,7 +723,9 @@ function viewProfilo() {
       <label class="field">Nome</label><input data-setting="name" value="${esc(s.name)}" placeholder="Come ti chiami?">
       <label class="field">Peso obiettivo (kg)</label><input type="number" inputmode="decimal" data-setting="goal" value="${esc(s.goal)}">
       <label class="field">Tema</label><div class="seg" style="margin:0">
-        ${[['auto', 'Automatico'], ['light', 'Chiaro'], ['dark', 'Scuro']].map(([v, l]) => `<button class="${s.theme === v ? 'active' : ''}" data-action="theme" data-t="${v}">${l}</button>`).join('')}</div></div>
+        ${[['auto', 'Automatico'], ['light', 'Chiaro'], ['dark', 'Scuro']].map(([v, l]) => `<button class="${s.theme === v ? 'active' : ''}" data-action="theme" data-t="${v}">${l}</button>`).join('')}</div>
+      <label class="field">Colore</label><div class="swatches">
+        ${COLORI.map(([v, l]) => `<button class="swatch ${s.accent === v ? 'active' : ''}" data-action="accent" data-c="${v}" data-accent="${v}"><span></span>${l}</button>`).join('')}</div></div>
     <div class="card"><h3>⚖️ Peso corporeo</h3>
       <div class="row"><input type="date" id="w-date" value="${todayISO()}"><input type="number" inputmode="decimal" step="0.05" id="w-kg" placeholder="kg"></div>
       <button class="btn primary full" style="margin-top:10px" data-action="add-weight">Aggiungi pesata</button>
@@ -557,7 +750,42 @@ function viewProfilo() {
       <button class="btn full" data-action="import-csv" style="margin-bottom:8px">📄 Importa da Fogli Google (CSV)</button>
       <button class="btn danger full" data-action="reset">🗑️ Cancella tutti i dati</button>
       <input type="file" id="file" accept=".json,.csv,text/csv,application/json" hidden></div>
-    <p class="muted" style="text-align:center">Palestra v2 • ${db.workouts.length} allenamenti salvati</p>`;
+    <p class="muted" style="text-align:center">Palestra v3 • ${db.workouts.length} allenamenti salvati</p>`;
+}
+
+const COLORI = [['viola', 'Viola'], ['blu', 'Blu'], ['verde', 'Verde'], ['arancio', 'Arancio']];
+const GRUPPI_LIB = ['Tutti', ...new Set(LIBRERIA.map(x => x.gruppo))];
+function libLista() {
+  const q = libQuery.trim().toLowerCase();
+  const items = LIBRERIA.filter(x => (libGruppo === 'Tutti' || x.gruppo === libGruppo) &&
+    (!q || `${x.nome} ${x.muscoli} ${x.attrezzo}`.toLowerCase().includes(q)));
+  if (!items.length) return `<div class="card">${emptyBox('Nessun esercizio trovato')}</div>`;
+  const inSessione = nome => Object.entries(db.schede).filter(([, sc]) => sc.esercizi.some(e => e.nome.toLowerCase() === nome.toLowerCase())).map(([k]) => k);
+  return items.map(x => {
+    const open = libOpen === x.nome, gia = inSessione(x.nome);
+    const det = open ? `<div class="lib-det">
+        <div class="lib-sec">💪 Muscoli</div><div>${esc(x.muscoli)}</div>
+        <div class="lib-sec">✅ Come si fa</div><ol>${x.esecuzione.map(t => `<li>${esc(t)}</li>`).join('')}</ol>
+        <div class="lib-sec">⚠️ Errori da evitare</div><ul>${x.errori.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+        <div class="muted" style="margin-top:10px">Consigliato: ${esc(x.rip)} ${x.tipo === 'tempo' ? 'sec' : 'rip'} • recupero ${esc(x.recupero)}</div>
+        <div class="lib-sec">＋ Aggiungi alla sessione</div>
+        <div class="lib-add">${Object.keys(db.schede).map(k => gia.includes(k)
+          ? `<button class="btn small" disabled>✓ ${k}</button>`
+          : `<button class="btn small primary" data-action="lib-add" data-s="${k}" data-nome="${esc(x.nome)}">Sessione ${k}</button>`).join('')}</div>
+      </div>` : '';
+    return `<div class="card lib-item ${open ? 'open' : ''}">
+      <div class="row" data-action="lib-toggle" data-nome="${esc(x.nome)}" style="cursor:pointer">
+        <div><div class="title">${esc(x.nome)}</div><div class="muted">${esc(x.attrezzo)} • ${esc(x.gruppo)}${gia.length ? ` • in ${gia.join(', ')}` : ''}</div></div>
+        <span class="muted">${open ? '▲' : '▼'}</span></div>${det}</div>`;
+  }).join('');
+}
+function viewLibreria() {
+  const back = db.draft && libFrom === 'allena' ? '← Torna all\'allenamento' : libFrom === 'schede' ? '← Torna a Modifica sessioni' : '← Torna ad Allena';
+  return `${head('Libreria esercizi', `${LIBRERIA.length} esercizi fattibili con la tua attrezzatura`)}
+    <input id="lib-search" type="search" placeholder="🔍 Cerca esercizio, muscolo o attrezzo" value="${esc(libQuery)}" style="margin-bottom:12px">
+    <div class="seg">${GRUPPI_LIB.map(g => `<button class="${libGruppo === g ? 'active' : ''}" data-action="lib-gruppo" data-g="${esc(g)}">${esc(g)}</button>`).join('')}</div>
+    <div id="lib-list">${libLista()}</div>
+    <button class="btn full" data-action="go" data-view="${libFrom}">${back}</button>`;
 }
 
 /* ============ 8. AZIONI ============ */
@@ -643,12 +871,7 @@ function parseCSV(text) {
   if (cur || row.length) { row.push(cur); rows.push(row); }
   return rows;
 }
-function parseDateIT(s) {
-  s = (s || '').trim();
-  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-  m = s.match(/^\d{4}-\d{2}-\d{2}/); return m ? m[0] : null;
-}
+const parseDateIT = s => normDate(s);
 function importCSV(text) {
   const rows = parseCSV(text);
   const h = rows.findIndex(r => r.some(c => c.trim().toLowerCase() === 'esercizio'));
@@ -679,19 +902,21 @@ let fileMode = 'json';
 function pickFile(mode) { fileMode = mode; const f = $('#file'); f.value = ''; f.click(); }
 
 /* ============ 10. NAVIGAZIONE ED EVENTI ============ */
-const VIEWS = { home: viewHome, allena: viewAllena, progressi: viewProgressi, stats: viewStats, profilo: viewProfilo, schede: viewSchede };
+const VIEWS = { home: viewHome, allena: viewAllena, progressi: viewProgressi, stats: viewStats, profilo: viewProfilo, schede: viewSchede, libreria: viewLibreria };
 function render() {
   const app = $('#app'); app.innerHTML = VIEWS[view]();
   app.style.animation = 'none'; void app.offsetHeight; app.style.animation = '';
 }
 function go(v) {
   view = v;
-  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  const tab = { schede: 'allena', libreria: 'allena' }[v] || v;
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === tab));
   render(); window.scrollTo(0, 0);
 }
 function applyTheme() {
   const t = db.settings.theme, dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  document.documentElement.dataset.accent = db.settings.accent || 'viola';
   $('meta[name=theme-color]').content = dark ? '#0b1120' : '#f1f5f9';
 }
 
@@ -734,6 +959,24 @@ document.addEventListener('click', e => {
       break;
     case 'period': period = +el.dataset.days; render(); break;
     case 'theme': db.settings.theme = el.dataset.t; save(); applyTheme(); render(); break;
+    case 'accent': db.settings.accent = el.dataset.c; save(); applyTheme(); render(); break;
+
+    /* Libreria */
+    case 'lib-open': libFrom = el.dataset.from || 'allena'; libOpen = null; go('libreria'); break;
+    case 'lib-info':
+      libFrom = 'allena'; libOpen = el.dataset.nome; libGruppo = 'Tutti'; libQuery = ''; go('libreria');
+      { const it = document.querySelector('.lib-item.open'); if (it) window.scrollTo(0, it.getBoundingClientRect().top + window.scrollY - 16); }
+      break;
+    case 'lib-gruppo': libGruppo = el.dataset.g; libOpen = null; render(); break;
+    case 'lib-toggle': libOpen = libOpen === el.dataset.nome ? null : el.dataset.nome; $('#lib-list').innerHTML = libLista(); break;
+    case 'lib-add': {
+      const x = libDi(el.dataset.nome), k = el.dataset.s;
+      if (!x || !db.schede[k]) break;
+      db.schede[k].esercizi.push({ nome: x.nome, gruppo: x.gruppo, tipo: x.tipo, serie: 3, rip: x.rip, carico: '', recupero: x.recupero, note: x.attrezzo });
+      save(); $('#lib-list').innerHTML = libLista();
+      toast(`${x.nome} aggiunto alla Sessione ${k}`);
+      break;
+    }
     case 'add-weight': {
       const kg = num($('#w-kg').value), date = $('#w-date').value;
       if (!kg || !date) return toast('Inserisci data e peso');
@@ -800,6 +1043,7 @@ document.addEventListener('input', e => {
     save();
   }
   if (t.dataset.setting) { db.settings[t.dataset.setting] = t.value; save(); }
+  if (t.id === 'lib-search') { libQuery = t.value; libOpen = null; $('#lib-list').innerHTML = libLista(); }
   if (t.dataset.sk && db.schede[editS]) {
     const sc = db.schede[editS], k = t.dataset.sk;
     if (k === 'sessione-nome') sc.nome = t.value;
