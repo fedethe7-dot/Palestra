@@ -1,4 +1,4 @@
-const CACHE = 'palestra-v5';
+const CACHE = 'palestra-v6';
 const FILES = ['./', './index.html', './style.css', './app.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {

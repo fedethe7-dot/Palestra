@@ -229,7 +229,9 @@ function migrate(d) {
     version: 2,
     workouts: pulisciAllenamenti(d.workouts),
     weights: (d.weights || []).map(p => ({ ...p, date: normDate(p.date) })).filter(p => p.date),
-    settings: { name: '', theme: 'auto', accent: 'viola', goal: '', syncUrl: '', syncToken: '', lastSync: '', syncError: '', lastRead: '', ...(d.settings || {}) },
+    body: (d.body || []).map(p => ({ ...p, date: normDate(p.date) })).filter(p => p.date),
+    settings: { name: '', theme: 'auto', accent: 'viola', goal: '', syncUrl: '', syncToken: '', lastSync: '', syncError: '', lastRead: '',
+      altezza: '', eta: '', attivita: '1.55', fase: 'massa', grassoObj: '', ...(d.settings || {}) },
     schede: d.schede || copiaSchede(),
     draft: d.draft || null,
     outbox: d.outbox || [],
@@ -711,6 +713,125 @@ function viewStats() {
       ${rec.length ? rec.map(([n, r]) => `<div class="list-item"><div><div class="title">${esc(n)}</div><div class="muted">${fmtDateLong(r.date)}</div></div><div class="big">${fmt(r.kg, 2)} kg × ${r.reps}</div></div>`).join('') : emptyBox('Nessun record')}</div>`;
 }
 
+/* ============ CORPO: BMI, metabolismo, kcal e macro ============ */
+const ATTIVITA = [
+  ['1.2', 'Sedentario', 'lavoro seduto, niente sport'],
+  ['1.375', 'Leggero', 'lavoro seduto + 1-2 allenamenti'],
+  ['1.55', 'Moderato', 'lavoro seduto + 3 allenamenti o calcio'],
+  ['1.725', 'Alto', 'allenamenti + sport quasi ogni giorno'],
+];
+const FASI = [
+  ['definizione', '🔥 Definizione', 'Perdere grasso tenendo il muscolo'],
+  ['mantenimento', '⚖️ Mantenimento', 'Stesso peso, migliorare la forma'],
+  ['massa', '💪 Massa pulita', 'Aumento lento, poco grasso'],
+];
+const bodySorted = () => [...db.body].sort((a, b) => a.date.localeCompare(b.date));
+function corpoCalcoli() {
+  const s = db.settings, ms = bodySorted();
+  const pesi = [...db.weights].sort((a, b) => a.date.localeCompare(b.date));
+  const ultimaMis = ms.at(-1), ultimoPeso = pesi.at(-1);
+  // Peso: la registrazione più recente tra pesate e misurazioni
+  const kg = ultimaMis && (!ultimoPeso || ultimaMis.date >= ultimoPeso.date) ? ultimaMis.kg : ultimoPeso ? ultimoPeso.kg : null;
+  const conGrasso = ms.filter(m => m.fat != null && m.fat !== '').at(-1);
+  const fat = conGrasso ? num(conGrasso.fat) : null;
+  const h = num(s.altezza), eta = num(s.eta), att = num(s.attivita) || 1.55;
+  const r = { kg, fat, h, eta, att, fase: s.fase || 'massa', dataGrasso: conGrasso?.date };
+  if (kg && h) r.bmi = kg / Math.pow(h / 100, 2);
+  if (kg && fat != null) { r.magra = kg * (1 - fat / 100); r.grassoKg = kg - r.magra; }
+  // Metabolismo basale: Katch-McArdle se conosco la % di grasso (più preciso), altrimenti Mifflin-St Jeor
+  if (r.magra) { r.bmr = 370 + 21.6 * r.magra; r.formula = 'Katch-McArdle (usa la massa magra)'; }
+  else if (kg && h && eta) { r.bmr = 10 * kg + 6.25 * h - 5 * eta + 5; r.formula = 'Mifflin-St Jeor (peso, altezza, età)'; }
+  if (r.bmr) {
+    r.tdee = r.bmr * att;
+    r.delta = r.fase === 'definizione' ? -Math.min(500, Math.round(r.tdee * 0.2)) : r.fase === 'massa' ? 200 : 0;
+    r.kcal = Math.round((r.tdee + r.delta) / 10) * 10;
+    const pg = r.fase === 'definizione' ? 2.2 : 2.0, gg = r.fase === 'definizione' ? 0.8 : 0.9;
+    r.prot = Math.round(kg * pg); r.grassi = Math.round(kg * gg);
+    r.carbo = Math.max(0, Math.round((r.kcal - r.prot * 4 - r.grassi * 9) / 4));
+  }
+  // Obiettivo % di grasso: peso finale a parità di massa magra
+  const obj = num(s.grassoObj);
+  if (obj && r.magra && obj > 3 && obj < 40) {
+    r.obj = obj; r.pesoObj = r.magra / (1 - obj / 100); r.daPerdere = kg - r.pesoObj;
+    if (r.daPerdere > 0.2) r.settimane = Math.ceil(r.daPerdere / Math.max(0.3, kg * 0.006));
+  }
+  return r;
+}
+function bmiInfo(b) {
+  if (b < 18.5) return ['Sottopeso', 'down'];
+  if (b < 25) return ['Normopeso', 'up'];
+  if (b < 30) return ['Sovrappeso', ''];
+  return ['Obesità', 'down'];
+}
+function macroBar(r) {
+  const k = [r.prot * 4, r.carbo * 4, r.grassi * 9], tot = k.reduce((a, b) => a + b, 0) || 1;
+  const col = ['var(--accent)', 'var(--green)', 'var(--accent2)'];
+  const nomi = [['Proteine', r.prot], ['Carboidrati', r.carbo], ['Grassi', r.grassi]];
+  return `<div class="macro-bar">${k.map((v, i) => `<span style="width:${v / tot * 100}%;background:${col[i]}"></span>`).join('')}</div>
+    <div class="macro-grid">${nomi.map(([n, g], i) => `<div><i style="background:${col[i]}"></i><div class="muted">${n}</div><b>${g} g</b><div class="muted">${Math.round(k[i] / tot * 100)}%</div></div>`).join('')}</div>`;
+}
+function viewCorpo() {
+  const s = db.settings, r = corpoCalcoli(), ms = bodySorted();
+  const filtra = arr => arr.filter(p => !period || p.date >= isoFrom(period));
+  const fatPts = filtra(ms.filter(m => num(m.fat) != null)).map(m => ({ x: m.date, y: num(m.fat) }));
+  const magraPts = filtra(ms.filter(m => num(m.fat) != null)).map(m => ({ x: m.date, y: m.kg * (1 - num(m.fat) / 100) }));
+  const manca = [];
+  if (!r.kg) manca.push('una pesata');
+  if (!r.h) manca.push("l'altezza");
+  if (r.fat == null && !r.eta) manca.push("la % di grasso (oppure l'età)");
+  const [bmiTxt, bmiCls] = r.bmi ? bmiInfo(r.bmi) : ['', ''];
+  const fase = FASI.find(f => f[0] === r.fase);
+  const obiettivo = r.kcal ? `<div class="card hero">
+      <div class="row"><span class="muted">Obiettivo giornaliero</span><span class="chip">${fase[1]}</span></div>
+      <div class="kcal-big">${fmt(r.kcal)} <small>kcal</small></div>
+      <div class="muted">Fabbisogno ${fmt(r.tdee)} kcal ${r.delta > 0 ? `+ ${r.delta}` : r.delta < 0 ? `− ${-r.delta}` : ''}${r.delta ? ' kcal' : ''}</div></div>
+    <div class="card"><h3>Macro del giorno</h3>${macroBar(r)}
+      <div class="muted" style="margin-top:12px">Proteine ${r.fase === 'definizione' ? '2,2' : '2'} g/kg • grassi ${r.fase === 'definizione' ? '0,8' : '0,9'} g/kg • il resto carboidrati.</div></div>`
+    : `<div class="card">${emptyBox(`Per calcolare kcal e macro mi servono: <b>${manca.join(', ')}</b>.`)}</div>`;
+  const grassoCard = r.obj ? `<div class="card"><h3>🎯 Obiettivo ${fmt(r.obj, 1)}% di grasso</h3>
+      ${r.daPerdere > 0.2 ? `<div class="grid2" style="margin:8px 0 0">
+        <div><div class="muted">Peso finale stimato</div><div class="big">${fmt(r.pesoObj, 1)} kg</div></div>
+        <div><div class="muted">Grasso da perdere</div><div class="big">${fmt(r.daPerdere, 1)} kg</div></div></div>
+        <div class="muted" style="margin-top:10px">A parità di muscolo. In definizione servono circa <b>${r.settimane} settimane</b> (≈${fmt(Math.max(0.3, r.kg * 0.006), 1)} kg a settimana).</div>
+        ${r.fase !== 'definizione' ? `<div class="hint">Per raggiungerlo imposta la fase su Definizione.</div>` : ''}`
+      : `<div class="muted" style="margin-top:6px">✅ Sei già a questo livello o sotto (${fmt(r.fat, 1)}%).</div>`}</div>` : '';
+  return `${head('Corpo', 'Composizione corporea, metabolismo e calorie')}
+    <div class="grid2">
+      ${stat('Peso', r.kg ? fmt(r.kg, 1) : '—', r.kg ? 'kg' : '')}
+      ${stat('BMI', r.bmi ? fmt(r.bmi, 1) : '—', '', r.bmi ? `<div class="${bmiCls}" style="font-size:12px;font-weight:700;margin-top:4px">${bmiTxt}</div>` : '')}
+      ${stat('Grasso', r.fat != null ? fmt(r.fat, 1) : '—', r.fat != null ? '%' : '', r.grassoKg ? `<div class="muted" style="font-size:12px;margin-top:4px">${fmt(r.grassoKg, 1)} kg</div>` : '')}
+      ${stat('Massa magra', r.magra ? fmt(r.magra, 1) : '—', r.magra ? 'kg' : '')}
+      ${stat('Metabolismo basale', r.bmr ? fmt(r.bmr) : '—', r.bmr ? 'kcal' : '')}
+      ${stat('Fabbisogno totale', r.tdee ? fmt(r.tdee) : '—', r.tdee ? 'kcal' : '')}
+    </div>
+    ${obiettivo}
+    <div class="card"><h3>Fase</h3><div class="seg" style="margin:0">
+      ${FASI.map(([v, l]) => `<button class="${r.fase === v ? 'active' : ''}" data-action="fase" data-f="${v}">${l}</button>`).join('')}</div>
+      <div class="muted" style="margin-top:10px">${fase[2]}${r.fase === 'massa' ? ' (+200 kcal)' : r.fase === 'definizione' ? ' (−20%, max −500 kcal)' : ''}</div>
+      <label class="field">% di grasso obiettivo</label>
+      <input type="number" inputmode="decimal" step="0.5" data-setting="grassoObj" data-recalc value="${esc(s.grassoObj)}" placeholder="es. 12"></div>
+    ${grassoCard}
+    <div class="card"><h3>⚖️ Nuova misurazione</h3>
+      <div class="muted" style="margin-bottom:8px">Dalla bilancia: meglio al mattino, a digiuno, dopo il bagno.</div>
+      <label class="field">Data</label><input type="date" id="b-date" value="${todayISO()}">
+      <div class="grid2" style="margin:0">
+        <div><label class="field">Peso (kg)</label><input type="number" inputmode="decimal" step="0.05" id="b-kg" placeholder="75,8"></div>
+        <div><label class="field">Grasso (%)</label><input type="number" inputmode="decimal" step="0.1" id="b-fat" placeholder="15,9"></div></div>
+      <label class="field">Massa muscolare (kg, facoltativa)</label><input type="number" inputmode="decimal" step="0.1" id="b-mus" placeholder="60,6">
+      <button class="btn primary full" style="margin-top:12px" data-action="add-body">Salva misurazione</button>
+      ${ms.slice(-6).reverse().map(m => `<div class="list-item"><div><div class="title">${fmtDateLong(m.date)}</div><div class="muted"><b>${fmt(m.kg, 1)} kg</b>${num(m.fat) != null ? ` • grasso ${fmt(num(m.fat), 1)}%` : ''}${num(m.muscle) != null ? ` • muscolo ${fmt(num(m.muscle), 1)} kg` : ''}</div></div><button class="btn small danger" data-action="del-body" data-id="${m.id}">✕</button></div>`).join('')}</div>
+    <div class="card"><h3>Andamento</h3>${periodSeg()}
+      <div class="muted" style="margin:4px 0 6px">% di grasso</div>${lineChart(fatPts, 'var(--accent2)', '%')}
+      <div class="muted" style="margin:14px 0 6px">Massa magra (kg)</div>${lineChart(magraPts, 'var(--green)', 'kg')}</div>
+    <div class="card"><h3>I tuoi dati</h3>
+      <div class="grid2" style="margin:0">
+        <div><label class="field">Altezza (cm)</label><input type="number" inputmode="numeric" data-setting="altezza" data-recalc value="${esc(s.altezza)}" placeholder="178"></div>
+        <div><label class="field">Età</label><input type="number" inputmode="numeric" data-setting="eta" data-recalc value="${esc(s.eta)}" placeholder="anni"></div></div>
+      <label class="field">Livello di attività</label>
+      <select data-setting="attivita" data-recalc>${ATTIVITA.map(([v, l, d]) => `<option value="${v}" ${String(s.attivita) === v ? 'selected' : ''}>${l} – ${d}</option>`).join('')}</select>
+      <div class="muted" style="margin-top:12px">${r.formula ? `Metabolismo calcolato con ${r.formula}.` : ''} I valori sono stime: controlla l'andamento del peso ogni 2-3 settimane e correggi di 100-200 kcal se serve.</div></div>`;
+}
+
 function viewProfilo() {
   const s = db.settings, ws = [...db.weights].sort((a, b) => b.date.localeCompare(a.date)), goal = num(s.goal);
   const nonSync = db.workouts.filter(w => !w.synced).length;
@@ -750,7 +871,7 @@ function viewProfilo() {
       <button class="btn full" data-action="import-csv" style="margin-bottom:8px">📄 Importa da Fogli Google (CSV)</button>
       <button class="btn danger full" data-action="reset">🗑️ Cancella tutti i dati</button>
       <input type="file" id="file" accept=".json,.csv,text/csv,application/json" hidden></div>
-    <p class="muted" style="text-align:center">Palestra v3 • ${db.workouts.length} allenamenti salvati</p>`;
+    <p class="muted" style="text-align:center">Palestra v4 • ${db.workouts.length} allenamenti salvati</p>`;
 }
 
 const COLORI = [['viola', 'Viola'], ['blu', 'Blu'], ['verde', 'Verde'], ['arancio', 'Arancio']];
@@ -902,7 +1023,7 @@ let fileMode = 'json';
 function pickFile(mode) { fileMode = mode; const f = $('#file'); f.value = ''; f.click(); }
 
 /* ============ 10. NAVIGAZIONE ED EVENTI ============ */
-const VIEWS = { home: viewHome, allena: viewAllena, progressi: viewProgressi, stats: viewStats, profilo: viewProfilo, schede: viewSchede, libreria: viewLibreria };
+const VIEWS = { home: viewHome, allena: viewAllena, progressi: viewProgressi, stats: viewStats, corpo: viewCorpo, profilo: viewProfilo, schede: viewSchede, libreria: viewLibreria };
 function render() {
   const app = $('#app'); app.innerHTML = VIEWS[view]();
   app.style.animation = 'none'; void app.offsetHeight; app.style.animation = '';
@@ -984,6 +1105,23 @@ document.addEventListener('click', e => {
       queue({ type: 'weight', date, kg });
       break;
     }
+    case 'fase': db.settings.fase = el.dataset.f; save(); render(); break;
+    case 'add-body': {
+      const kg = num($('#b-kg').value), date = $('#b-date').value, fat = num($('#b-fat').value), muscle = num($('#b-mus').value);
+      if (!kg || !date) return toast('Inserisci data e peso');
+      if (fat != null && (fat < 3 || fat > 60)) return toast('La % di grasso sembra sbagliata');
+      db.body = db.body.filter(m => m.date !== date);
+      db.body.push({ id: uid(), date, kg, fat, muscle });
+      // La pesata va anche nello storico del peso (e quindi nel foglio Google)
+      if (!db.weights.some(w => w.date === date && w.kg === kg)) {
+        db.weights = db.weights.filter(w => w.date !== date);
+        db.weights.push({ id: uid(), date, kg });
+        queue({ type: 'weight', date, kg });
+      }
+      save(); render(); toast('Misurazione salvata');
+      break;
+    }
+    case 'del-body': db.body = db.body.filter(m => m.id !== el.dataset.id); save(); render(); break;
     case 'del-weight': db.weights = db.weights.filter(w => w.id !== el.dataset.id); save(); render(); break;
     case 'test-sync': testSync(); break;
     case 'sync-now': syncNow(); break;
@@ -1055,6 +1193,7 @@ document.addEventListener('input', e => {
 document.addEventListener('change', async e => {
   const t = e.target;
   if (t.id === 'ex-select') { chartEx = t.value; render(); }
+  if (t.dataset.recalc !== undefined) { db.settings[t.dataset.setting] = t.value; save(); render(); }
   if (t.dataset.field === 'date') render();
   if (t.dataset.sk === 'tipo') render();
   if (t.id === 'file' && t.files[0]) {
