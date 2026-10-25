@@ -1,4 +1,4 @@
-<escape>{
+{
   "name": "Palestra",
   "short_name": "Palestra",
   "start_url": "./",
@@ -27,4 +27,4 @@
       "purpose": "any"
     }
   ]
-}</escape>
+}
