@@ -215,12 +215,13 @@ h3 { font-size: 15.5px; font-weight: 750; margin-bottom: 12px; letter-spacing: -
 .wk-prog button.ok { background: var(--green); }
 .wk-prog button.cur { outline: 2px solid var(--accent); outline-offset: 2px; }
 .wk-prog button.fin { flex: 0 0 18px; }
-.wk-nav { position: sticky; bottom: calc(14px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: 56px 1fr; gap: 10px; margin-top: 4px; z-index: 5; }
+.wk-nav { position: sticky; bottom: 0; display: grid; grid-template-columns: 56px 1fr; gap: 10px; margin: 4px -16px 0; padding: 22px 16px calc(14px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, transparent, var(--bg) 38%); z-index: 5; }
 .wk-nav .btn { box-shadow: var(--shadow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wk-nav .btn:not(.primary) { background: var(--card-solid); border: 1px solid var(--border); }
 body.in-workout #nav { transform: translateY(110%); }
-body.in-workout #app { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
-body.in-workout #rest { bottom: calc(84px + env(safe-area-inset-bottom)); }
+body.in-workout #app { padding-bottom: 0; }
+body.in-workout #rest { bottom: calc(96px + env(safe-area-inset-bottom)); }
 
 .exercise .ex-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .exercise .ex-name { font-size: 21px; font-weight: 800; letter-spacing: -0.4px; }
@@ -261,24 +262,31 @@ body.in-workout #rest { bottom: calc(84px + env(safe-area-inset-bottom)); }
 .set-labels { display: grid; grid-template-columns: 34px 1fr 1fr 48px; gap: 8px; font-size: 11px; color: var(--muted); margin: 16px 0 6px; text-align: center; }
 
 /* Illustrazioni esercizi */
-.visual { display: grid; grid-template-columns: 1fr 118px; gap: 10px; margin-top: 14px; align-items: stretch; }
-.visual.solo-mappa { grid-template-columns: 1fr; justify-items: center; }
-.visual.solo-mappa .vmappa { width: 180px; }
-.vfoto { position: relative; border-radius: 14px; overflow: hidden; background: #0b0f19; aspect-ratio: 4 / 3; cursor: pointer; }
+.visual { margin-top: 14px; }
+.vfoto { position: relative; width: 100%; border-radius: 16px; overflow: hidden; background: #0b0f19; aspect-ratio: 3 / 2; cursor: pointer; }
 .vfoto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .vfoto img.fine { animation: dissolvi 3.2s ease-in-out infinite; }
 .vfoto.paused img.fine { animation-play-state: paused; }
 @keyframes dissolvi { 0%, 35% { opacity: 0; } 50%, 85% { opacity: 1; } 100% { opacity: 0; } }
 .vtag { position: absolute; left: 8px; bottom: 8px; background: rgba(0, 0, 0, .55); color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 99px; }
-.vmappa { display: flex; flex-direction: column; justify-content: center; gap: 4px; background: rgba(148, 163, 184, .07); border-radius: 14px; padding: 6px; }
-.mmap { width: 100%; height: auto; }
+.mbig { background: rgba(148, 163, 184, .07); border-radius: 16px; padding: 10px; margin: 4px 0 10px; }
+.mmap { width: 100%; max-width: 340px; height: auto; display: block; margin: 0 auto; }
+.mtags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.mtag { font-size: 12.5px; font-weight: 700; padding: 5px 10px; border-radius: 99px; }
+.mtag.p { background: var(--accent); color: #fff; }
+.mtag.s { background: rgba(var(--acc-rgb), .18); color: var(--accent); }
+.info-sheet { max-height: 88vh; }
+.info-list { padding-left: 20px; font-size: 14.5px; line-height: 1.5; }
+.info-list li { margin-bottom: 6px; }
+.nav-emo { font-size: 22px; line-height: 24px; height: 24px; filter: grayscale(.6); opacity: .75; transition: .25s var(--ease); }
+#nav button.active .nav-emo { filter: none; opacity: 1; transform: translateY(-1px) scale(1.12); }
 .mmap .b { fill: rgba(148, 163, 184, .28); }
 .mmap .m { fill: rgba(148, 163, 184, .22); stroke: var(--bg); stroke-width: .6; transition: fill .3s; }
 .mmap .m.p { fill: var(--accent); }
 .mmap .m.s { fill: rgba(var(--acc-rgb), .38); }
 .mmap .sep { stroke: var(--bg); stroke-width: .6; fill: none; opacity: .6; }
 .mmap text { fill: var(--muted); font-size: 8px; font-weight: 700; }
-.mleg { display: flex; flex-direction: column; gap: 2px; font-size: 10.5px; color: var(--muted); padding-left: 4px; }
+.mleg { display: flex; gap: 14px; font-size: 12px; color: var(--muted); }
 .mleg i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
 .mleg i.p { background: var(--accent); }
 .mleg i.s { background: rgba(var(--acc-rgb), .38); }

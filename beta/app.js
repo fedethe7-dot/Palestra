@@ -648,7 +648,7 @@ function exerciseFocus(e, i, date) {
   }
   return `<div class="card exercise focus">
     <div class="ex-head"><div><div class="ex-name">${esc(e.nome)}</div><div class="ex-meta">${meta}</div></div>
-      <div class="ex-tags"><span class="chip">${esc(e.gruppo)}</span>${libDi(e.nome) ? `<button class="info-btn" data-action="lib-info" data-nome="${esc(e.nome)}" aria-label="Come si fa">ℹ️</button>` : ''}</div></div>
+      <div class="ex-tags"><span class="chip">${esc(e.gruppo)}</span>${libDi(e.nome) || visualDi(e.nome, e.gruppo) ? `<button class="info-btn" data-action="lib-info" data-nome="${esc(e.nome)}" aria-label="Muscoli e tecnica">ℹ️</button>` : ''}</div></div>
     ${visualBlock(e.nome, e.gruppo)}
     ${info}${hint}
     ${e.tipo === 'tempo' ? timerPanel(e) : ''}
@@ -666,7 +666,7 @@ function viewWorkout() {
     <button class="sheet-item" data-action="wk-go" data-i="${n}"><span>🏁 Riepilogo e salvataggio</span></button></div>` : '';
   const nav = `<div class="wk-nav"><button class="btn" data-action="wk-go" data-i="${cur - 1}" ${cur === 0 ? 'disabled' : ''}>◀</button>
     ${cur < n ? `<button class="btn primary" data-action="wk-go" data-i="${cur + 1}">${cur === n - 1 ? 'Concludi 🏁' : `Avanti: ${esc(d.exercises[cur + 1].nome)} ▶`}</button>` : ''}</div>`;
-  if (cur < n) return `${top}${prog}${exerciseFocus(d.exercises[cur], cur, d.date)}${nav}${lista}`;
+  if (cur < n) return `${top}${prog}${exerciseFocus(d.exercises[cur], cur, d.date)}${nav}${lista}${popupInfo()}`;
   // Riepilogo finale
   const riepilogo = d.exercises.map((e, i) => `<div class="list-item" data-action="wk-go" data-i="${i}" style="cursor:pointer"><span>${exFatto(e) ? '✅' : e.sets.some(s => s.done) ? '🟡' : '⚪'} ${esc(e.nome)}</span>
     <span class="muted">${e.sets.filter(s => num(s.reps) != null).map(s => e.tipo === 'carico' ? `${fmt(num(s.kg), 2)}×${s.reps}` : s.reps).join(' • ') || '—'}</span></div>`).join('');
@@ -955,7 +955,7 @@ function libLista() {
     const open = libOpen === x.nome, gia = inSessione(x.nome);
     const det = open ? `<div class="lib-det">
         ${visualBlock(x.nome, x.gruppo)}
-        <div class="lib-sec">💪 Muscoli</div><div>${esc(x.muscoli)}</div>
+        <div class="lib-sec">💪 Muscoli</div>${mappaGrande(x.nome, x.gruppo)}<div class="muted" style="margin-top:6px">${esc(x.muscoli)}</div>
         <div class="lib-sec">✅ Come si fa</div><ol>${x.esecuzione.map(t => `<li>${esc(t)}</li>`).join('')}</ol>
         <div class="lib-sec">⚠️ Errori da evitare</div><ul>${x.errori.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
         <div class="muted" style="margin-top:10px">Consigliato: ${esc(x.rip)} ${x.tipo === 'tempo' ? 'sec' : 'rip'} • recupero ${esc(x.recupero)}</div>
@@ -1091,7 +1091,7 @@ function render() {
 }
 function go(v) {
   if (v === 'stats') { v = 'progressi'; progTab = 'stats'; }
-  view = v; wkList = false;
+  view = v; wkList = false; infoNome = null;
   const tab = { schede: 'allena', libreria: 'allena', ricetta: 'ricette' }[v] || v;
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === tab));
   render(); window.scrollTo(0, 0);
@@ -1167,10 +1167,8 @@ document.addEventListener('click', e => {
 
     /* Libreria */
     case 'lib-open': libFrom = el.dataset.from || 'allena'; libOpen = null; go('libreria'); break;
-    case 'lib-info':
-      libFrom = 'allena'; libOpen = el.dataset.nome; libGruppo = 'Tutti'; libQuery = ''; go('libreria');
-      { const it = document.querySelector('.lib-item.open'); if (it) window.scrollTo(0, it.getBoundingClientRect().top + window.scrollY - 16); }
-      break;
+    case 'lib-info': infoNome = el.dataset.nome; render(); break;
+    case 'info-close': infoNome = null; render(); break;
     case 'lib-gruppo': libGruppo = el.dataset.g; libOpen = null; render(); break;
     case 'lib-toggle': libOpen = libOpen === el.dataset.nome ? null : el.dataset.nome; $('#lib-list').innerHTML = libLista(); break;
     case 'lib-add': {

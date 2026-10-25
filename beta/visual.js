@@ -100,7 +100,29 @@ function visualBlock(nome, gruppo, opts = {}) {
       <img src="${IMG_ES}${v.slug}-0.webp" alt="${esc(nome)}: posizione iniziale" loading="lazy">
       <img src="${IMG_ES}${v.slug}-1.webp" alt="${esc(nome)}: posizione finale" loading="lazy" class="fine">
       <span class="vtag">Inizio ➜ Fine</span></div>` : '';
-  const legenda = `<div class="mleg"><span><i class="p"></i>Principali</span>${v.sec.length ? '<span><i class="s"></i>Secondari</span>' : ''}</div>`;
   const chiavi = v.chiavi.length && !opts.noChiavi ? `<div class="chiavi">${v.chiavi.map(c => `<span>✓ ${esc(c)}</span>`).join('')}</div>` : '';
-  return `<div class="visual ${foto ? '' : 'solo-mappa'}">${foto}<div class="vmappa">${mappaMuscoli(v.pri, v.sec)}${legenda}</div></div>${chiavi}`;
+  return `${foto ? `<div class="visual">${foto}</div>` : ''}${chiavi}`;
+}
+
+/* Mappa muscoli grande con l'elenco dei muscoli (popup ℹ️ e libreria) */
+function mappaGrande(nome, gruppo) {
+  const v = visualDi(nome, gruppo); if (!v) return '';
+  const lista = (ids, cls) => ids.map(i => `<span class="mtag ${cls}">${NOMI_MUSCOLI[i] || i}</span>`).join('');
+  return `<div class="mbig">${mappaMuscoli(v.pri, v.sec)}</div>
+    <div class="mtags">${lista(v.pri, 'p')}${lista(v.sec, 's')}</div>
+    <div class="mleg"><span><i class="p"></i>Principali</span>${v.sec.length ? '<span><i class="s"></i>Secondari</span>' : ''}</div>`;
+}
+
+/* Popup ℹ️: muscoli, come si fa, errori da evitare */
+let infoNome = null;
+function popupInfo() {
+  if (!infoNome) return '';
+  const x = libDi(infoNome), e = db.draft?.exercises.find(y => y.nome === infoNome);
+  const gruppo = x?.gruppo || e?.gruppo;
+  return `<div class="sheet-bg" data-action="info-close"></div><div class="sheet info-sheet" role="dialog" aria-label="${esc(infoNome)}">
+    <div class="row"><h3 style="margin:0">ℹ️ ${esc(infoNome)}</h3><button class="icon-btn" data-action="info-close" aria-label="Chiudi">✕</button></div>
+    <div class="lib-sec">💪 Muscoli coinvolti</div>${mappaGrande(infoNome, gruppo) || '<div class="muted">Nessuna mappa per questo esercizio</div>'}
+    ${x ? `<div class="lib-sec">✅ Come si fa</div><ol class="info-list">${x.esecuzione.map(t => `<li>${esc(t)}</li>`).join('')}</ol>
+      <div class="lib-sec">⚠️ Errori da evitare</div><ul class="info-list">${x.errori.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+    <button class="btn primary full" data-action="info-close" style="margin-top:14px">Ho capito 👍</button></div>`;
 }
