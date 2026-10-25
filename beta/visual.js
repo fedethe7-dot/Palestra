@@ -101,7 +101,7 @@ function visualBlock(nome, gruppo, opts = {}) {
       <img src="${IMG_ES}${v.slug}-1.webp" alt="${esc(nome)}: posizione finale" loading="lazy" class="fine">
       <span class="vtag">Inizio ➜ Fine</span></div>` : '';
   const chiavi = v.chiavi.length && !opts.noChiavi ? `<div class="chiavi">${v.chiavi.map(c => `<span>✓ ${esc(c)}</span>`).join('')}</div>` : '';
-  return `${foto ? `<div class="visual">${foto}</div>` : ''}${chiavi}`;
+  return `${foto && !opts.noFoto ? `<div class="visual">${foto}</div>` : ''}${chiavi}`;
 }
 
 /* Mappa muscoli grande con l'elenco dei muscoli (popup ℹ️ e libreria) */
@@ -121,6 +121,8 @@ function popupInfo() {
   const gruppo = x?.gruppo || e?.gruppo;
   return `<div class="sheet-bg" data-action="info-close"></div><div class="sheet info-sheet" role="dialog" aria-label="${esc(infoNome)}">
     <div class="row"><h3 style="margin:0">ℹ️ ${esc(infoNome)}</h3><button class="icon-btn" data-action="info-close" aria-label="Chiudi">✕</button></div>
+    ${visualBlock(infoNome, gruppo, { noChiavi: true })}
+    ${e ? ultimaVolta(e, db.draft.date) : ''}
     <div class="lib-sec">💪 Muscoli coinvolti</div>${mappaGrande(infoNome, gruppo) || '<div class="muted">Nessuna mappa per questo esercizio</div>'}
     ${x ? `<div class="lib-sec">✅ Come si fa</div><ol class="info-list">${x.esecuzione.map(t => `<li>${esc(t)}</li>`).join('')}</ol>
       <div class="lib-sec">⚠️ Errori da evitare</div><ul class="info-list">${x.errori.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}

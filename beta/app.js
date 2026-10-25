@@ -635,22 +635,23 @@ function setRows(e, i, last) {
   return `<div class="set-labels"><span>Serie</span><span>${e.tipo === 'tempo' ? 'Secondi' : 'Ripetizioni'}</span><span>${e.tipo === 'carico' ? 'Kg' : ''}</span><span></span></div>
     ${rows}<button class="btn small" data-action="add-set" data-ex="${i}">＋ Serie</button>`;
 }
+/* Ultima volta + consiglio di progressione (nel popup ℹ️) */
+function ultimaVolta(e, date) {
+  const last = lastFor(e.nome, date), unit = e.tipo === 'tempo' ? 'sec' : 'rip';
+  if (!last) return `<div class="ex-last">✨ Prima volta: obiettivo ${esc(e.rip)} ${unit}</div>`;
+  const s = last.ex.sets, kg = e.tipo === 'carico' ? `${fmt(exMaxKg(last.ex), 2)} kg — ` : '';
+  return `<div class="ex-last">🕑 Ultima volta <b>${fmtDate(last.date)}</b>: ${kg}${s.map(x => x.reps).join(' / ')} ${unit}</div>
+    <div class="hint">💡 ${suggestion(e, s)}</div>`;
+}
 function exerciseFocus(e, i, date) {
   const last = lastFor(e.nome, date), unit = e.tipo === 'tempo' ? 'sec' : 'rip';
   const meta = [`${e.serie} × ${esc(e.rip)}${e.tipo === 'tempo' ? ' sec' : ''}`,
     e.carico ? esc(e.carico) + (num(e.carico) != null ? ' kg' : '') : '',
     e.recupero ? '⏱️ ' + esc(e.recupero) : '', e.note ? esc(e.note) : ''].filter(Boolean).join(' • ');
-  let info = `<div class="ex-last">✨ Prima volta: obiettivo ${esc(e.rip)} ${unit}</div>`, hint = '';
-  if (last) {
-    const s = last.ex.sets, kg = e.tipo === 'carico' ? `${fmt(exMaxKg(last.ex), 2)} kg — ` : '';
-    info = `<div class="ex-last">🕑 Ultima volta <b>${fmtDate(last.date)}</b>: ${kg}${s.map(x => x.reps).join(' / ')} ${unit}</div>`;
-    hint = `<div class="hint">💡 ${suggestion(e, s)}</div>`;
-  }
   return `<div class="card exercise focus">
     <div class="ex-head"><div><div class="ex-name">${esc(e.nome)}</div><div class="ex-meta">${meta}</div></div>
-      <div class="ex-tags"><span class="chip">${esc(e.gruppo)}</span>${libDi(e.nome) || visualDi(e.nome, e.gruppo) ? `<button class="info-btn" data-action="lib-info" data-nome="${esc(e.nome)}" aria-label="Muscoli e tecnica">ℹ️</button>` : ''}</div></div>
-    ${visualBlock(e.nome, e.gruppo)}
-    ${info}${hint}
+      <div class="ex-tags"><span class="chip">${esc(e.gruppo)}</span><button class="info-btn" data-action="lib-info" data-nome="${esc(e.nome)}" aria-label="Foto, muscoli e tecnica">ℹ️</button></div></div>
+    ${visualBlock(e.nome, e.gruppo, { noFoto: true })}
     ${e.tipo === 'tempo' ? timerPanel(e) : ''}
     ${setRows(e, i, last)}</div>`;
 }

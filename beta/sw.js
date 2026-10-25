@@ -1,4 +1,4 @@
-const CACHE = 'palestra-beta-2';
+const CACHE = 'palestra-beta-3';
 const FILES = ['./', './index.html', './style.css', './app.js', './visual.js', './timer.js', './ricette.js', './stampa.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
