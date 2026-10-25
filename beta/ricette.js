@@ -12,6 +12,13 @@ const CATEGORIE = [
   ['Spuntini proteici', '🥜', '#f97316', '#eab308'],
   ['Da portare al lavoro', '🥡', '#06b6d4', '#3b82f6'],
 ];
+/* Emoji del piatto riconosciuta dal nome (se non c'è, quella della categoria) */
+const EMO_PIATTO = [[/canederli|brodo|zuppa/i, '🍲'], [/polenta/i, '🌽'], [/pizza|montanara/i, '🍕'], [/hamburger|burger/i, '🍔'], [/piadina|wrap/i, '🌯'], [/carbonara|pasta|trofie|spaghett|penne/i, '🍝'],
+  [/risotto|riso|basmati/i, '🍚'], [/pancake/i, '🥞'], [/porridge|corn flakes|cereali/i, '🥣'], [/tiramis|torta|mug cake|cake/i, '🍰'],
+  [/uova|frittata/i, '🍳'], [/frullato|shake/i, '🥤'], [/toast|panino|tramezz/i, '🥪'], [/bresaola|speck|prosciutto/i, '🥓'],
+  [/cotoletta|pollo/i, '🍗'], [/tacchino|carne|manzo/i, '🥩'],
+  [/yogurt/i, '🥛'], [/patat/i, '🍟'], [/insalata/i, '🥗'], [/fette biscottate|biscott/i, '🍞']];
+const emoDi = r => (EMO_PIATTO.find(([re]) => re.test(r.nome)) || [, catDi(r.categoria)[1]])[1];
 const catDi = nome => CATEGORIE.find(c => c[0].toLowerCase() === String(nome || '').toLowerCase()) || ['Altro', '🍴', '#64748b', '#334155'];
 const COLONNE_RICETTE = ['ID', 'Nome ricetta', 'Categoria', 'Porzioni', 'Prep (min)', 'Cottura (min)', 'Ingrediente', 'Grammi',
   'Kcal /100g', 'Proteine /100g', 'Carboidrati /100g', 'Grassi /100g', 'Procedimento', 'Note', 'Preferita', 'Foto'];
@@ -35,7 +42,7 @@ function passiDi(testo) {
 
 /* ---------- Schermate ---------- */
 function ricettaCard(r) {
-  const [, emo, c1, c2] = catDi(r.categoria), m = ricMacro(r).por, min = (r.prep || 0) + (r.cottura || 0);
+  const [, , c1, c2] = catDi(r.categoria), emo = emoDi(r), m = ricMacro(r).por, min = (r.prep || 0) + (r.cottura || 0);
   return `<button class="ric-card" data-action="ric-open" data-id="${esc(r.id)}">
     <div class="ric-img" style="--c1:${c1};--c2:${c2}">${r.foto ? `<img src="${esc(r.foto)}" alt="" loading="lazy">` : `<span>${emo}</span>`}
       ${r.preferita ? '<i class="ric-star">⭐</i>' : ''}</div>
@@ -66,7 +73,7 @@ function viewRicette() {
 function viewRicetta() {
   const r = (db.ricette || []).find(x => x.id === ricOpen);
   if (!r) { view = 'ricette'; return viewRicette(); }
-  const [cat, emo, c1, c2] = catDi(r.categoria);
+  const [cat, emoCat, c1, c2] = catDi(r.categoria), emo = emoDi(r);
   const n = ricPorz || r.porzioni || 1, k = n / (r.porzioni || 1);
   const { tot, por } = ricMacro(r);
   const M = { kcal: tot.kcal * k, p: tot.p * k, c: tot.c * k, f: tot.f * k };
@@ -76,7 +83,7 @@ function viewRicetta() {
   return `<button class="back-link" data-action="go" data-view="ricette">← Ricette</button>
     <div class="ric-hero" style="--c1:${c1};--c2:${c2}">${r.foto ? `<img src="${esc(r.foto)}" alt="">` : `<span>${emo}</span>`}</div>
     <div class="row" style="align-items:flex-start;margin:14px 0 4px">
-      <div><h1 class="ric-title">${esc(r.nome)}</h1><div class="muted">${emo} ${esc(cat)}${r.prep ? ` • 🔪 ${r.prep}′ prep.` : ''}${r.cottura ? ` • 🔥 ${r.cottura}′ cottura` : ''}</div></div>
+      <div><h1 class="ric-title">${esc(r.nome)}</h1><div class="muted">${emoCat} ${esc(cat)}${r.prep ? ` • 🔪 ${r.prep}′ prep.` : ''}${r.cottura ? ` • 🔥 ${r.cottura}′ cottura` : ''}</div></div>
       <button class="fav ${r.preferita ? 'on' : ''}" data-action="ric-fav" data-id="${esc(r.id)}" aria-label="Preferita">${r.preferita ? '⭐' : '☆'}</button></div>
     <div class="card"><div class="row"><h3 style="margin:0">Per porzione</h3><span class="muted">${fmt(por.g)} g</span></div>
       <div class="macro4"><div><b>${fmt(por.kcal)}</b><span>kcal</span></div><div class="mp"><b>${fmt(por.p, 1)}</b><span>proteine</span></div>

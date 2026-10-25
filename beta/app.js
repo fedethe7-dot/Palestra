@@ -580,7 +580,7 @@ function viewHome() {
     </div>
     ${pr ? `<div class="card record"><div class="rec-emo">🏆</div><div><div class="muted">Ultimo record</div><div class="big">${esc(pr[0])}</div><div class="muted"><b class="acc">${fmt(pr[1].kg, 2)} kg × ${pr[1].reps}</b> • ${fmtDateLong(pr[1].date)}</div></div></div>` : ''}
     ${pref.length ? `<div class="card"><div class="row"><h3 style="margin:0">⭐ Ricette preferite</h3><button class="link" data-action="go" data-view="ricette">Tutte →</button></div>
-      <div class="ric-mini">${pref.slice(0, 6).map(r => `<button data-action="ric-open" data-id="${esc(r.id)}">${catDi(r.categoria)[1]} ${esc(r.nome)}</button>`).join('')}</div></div>` : ''}
+      <div class="ric-mini">${pref.slice(0, 6).map(r => `<button data-action="ric-open" data-id="${esc(r.id)}">${emoDi(r)} ${esc(r.nome)}</button>`).join('')}</div></div>` : ''}
     ${last ? `<div class="card"><h3>Ultimo allenamento</h3>${workoutRow(last)}</div>`
            : `<div class="card">${emptyBox('Nessun allenamento registrato.<br>Inizia il primo oppure importa i tuoi dati da Profilo.')}</div>`}`;
 }
