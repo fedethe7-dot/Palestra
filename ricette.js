@@ -99,10 +99,10 @@ function viewRicetta() {
 }
 
 /* ---------- CSV ---------- */
-function importRicetteCSV(text) {
+function importRicetteCSV(text, silenzioso = false) {
   const rows = parseCSV(text.replace(/^﻿/, ''));
   const h = rows.findIndex(r => r.some(c => c.trim().toLowerCase() === 'ingrediente'));
-  if (h < 0) return toast('Non trovo la colonna "Ingrediente"');
+  if (h < 0) return silenzioso ? 0 : toast('Non trovo la colonna "Ingrediente"');
   const hd = rows[h].map(c => c.trim().toLowerCase());
   const col = (...nomi) => hd.findIndex(x => nomi.some(n => x.startsWith(n)));
   const C = { id: col('id'), nome: col('nome'), cat: col('categoria'), porz: col('porzioni'), prep: col('prep'), cott: col('cottura'),
@@ -124,15 +124,32 @@ function importRicetteCSV(text) {
       p: num(v(r, 'p')) || 0, c: num(v(r, 'c')) || 0, f: num(v(r, 'f')) || 0 });
   });
   const valide = nuove.filter(r => r.ingredienti.length);
-  if (!valide.length) return toast('Nessuna ricetta valida nel file');
+  if (!valide.length) return silenzioso ? 0 : toast('Nessuna ricetta valida nel file');
   db.ricette = db.ricette || [];
-  let agg = 0;
+  let agg = 0, nuove2 = 0;
   valide.forEach(r => {
+    // Le ricette incluse che hai eliminato non tornano
+    if (silenzioso && (db.ricetteTolte || []).includes(r.id)) return;
     const i = db.ricette.findIndex(x => x.id === r.id);
-    if (i >= 0) { r.preferita = r.preferita || db.ricette[i].preferita; db.ricette[i] = r; agg++; } else db.ricette.push(r);
+    if (i >= 0) { r.preferita = r.preferita || db.ricette[i].preferita; db.ricette[i] = r; agg++; } else { db.ricette.push(r); nuove2++; }
   });
-  save(); ricCat = 'Tutte'; go('ricette');
-  toast(`🍳 ${valide.length - agg} ricette nuove${agg ? `, ${agg} aggiornate` : ''}`);
+  save();
+  if (silenzioso) return nuove2;
+  ricCat = 'Tutte'; go('ricette');
+  toast(`🍳 ${nuove2} ricette nuove${agg ? `, ${agg} aggiornate` : ''}`);
+}
+/* Ricette incluse nell'app (file ricette.csv del repository): si caricano da sole
+   la prima volta e quando ne aggiungo di nuove (aumenta RICETTE_VER) */
+const RICETTE_VER = 2;
+async function caricaRicetteBase() {
+  if (num(db.settings.ricetteVer) >= RICETTE_VER) return;
+  try {
+    const res = await fetch('ricette.csv', { cache: 'no-cache' });
+    if (!res.ok) return;
+    const n = importRicetteCSV(await res.text(), true);
+    db.settings.ricetteVer = RICETTE_VER; save();
+    if (n) { toast(`🍳 ${n} ricette fit aggiunte!`); if (view === 'ricette' || view === 'home') render(); }
+  } catch (e) {}
 }
 function scaricaModelloCSV() {
   const q = s => /[;"\n]/.test(s) ? `"${String(s).replace(/"/g, '""')}"` : s;
@@ -155,7 +172,10 @@ function azioniRicette(a, el) {
     case 'ric-fav': { const r = db.ricette.find(x => x.id === el.dataset.id); if (r) { r.preferita = !r.preferita; save(); render();
       toast(r.preferita ? '⭐ Aggiunta alle preferite' : 'Tolta dalle preferite'); } return true; }
     case 'ric-del':
-      if (confirm('Eliminare questa ricetta dall\'app?')) { db.ricette = db.ricette.filter(x => x.id !== el.dataset.id); save(); go('ricette'); }
+      if (confirm('Eliminare questa ricetta dall\'app?')) {
+        db.ricette = db.ricette.filter(x => x.id !== el.dataset.id);
+        db.ricetteTolte = [...new Set([...(db.ricetteTolte || []), el.dataset.id])]; save(); go('ricette');
+      }
       return true;
     case 'ric-import': pickFile('ricette'); return true;
     case 'ric-modello': scaricaModelloCSV(); return true;
