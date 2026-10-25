@@ -639,8 +639,14 @@ function setRows(e, i, last) {
 function ultimaVolta(e, date) {
   const last = lastFor(e.nome, date), unit = e.tipo === 'tempo' ? 'sec' : 'rip';
   if (!last) return `<div class="ex-last">✨ Prima volta: obiettivo ${esc(e.rip)} ${unit}</div>`;
-  const s = last.ex.sets, kg = e.tipo === 'carico' ? `${fmt(exMaxKg(last.ex), 2)} kg — ` : '';
-  return `<div class="ex-last">🕑 Ultima volta <b>${fmtDate(last.date)}</b>: ${kg}${s.map(x => x.reps).join(' / ')} ${unit}</div>
+  const s = last.ex.sets;
+  // Senza data, in forma semplice: "45 kg × 10 · 10 · 10" (o "34×15 · 38×15" se i kg cambiano tra le serie)
+  let txt;
+  if (e.tipo === 'carico') {
+    const kgs = [...new Set(s.map(x => x.kg))];
+    txt = kgs.length === 1 ? `${fmt(kgs[0], 2)} kg × ${s.map(x => x.reps).join(' · ')}` : s.map(x => `${fmt(x.kg, 2)}×${x.reps}`).join(' · ');
+  } else txt = s.map(x => x.reps + (e.tipo === 'tempo' ? '″' : '')).join(' · ') + (e.tipo === 'tempo' ? '' : ' rip');
+  return `<div class="ex-last">🕑 Ultima volta: <b>${txt}</b></div>
     <div class="hint">💡 ${suggestion(e, s)}</div>`;
 }
 function exerciseFocus(e, i, date) {
