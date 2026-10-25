@@ -965,7 +965,7 @@ function viewProfilo() {
       <button class="btn full" data-action="import-json" style="margin-bottom:8px">⬆️ Ripristina backup</button>
       <button class="btn full" data-action="import-csv" style="margin-bottom:8px">📄 Importa da Fogli Google (CSV)</button>
       <button class="btn danger full" data-action="reset">🗑️ Cancella tutti i dati</button></div>
-    <p class="muted" style="text-align:center">Palestra v5.1${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
+    <p class="muted" style="text-align:center">Palestra v5.1.1${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
 }
 
 const COLORI = [['viola', 'Viola'], ['blu', 'Blu'], ['verde', 'Verde'], ['arancio', 'Arancio']];

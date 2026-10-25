@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=5.1.1">
 </head>
 <body>
   <main id="app"></main>
@@ -24,13 +24,18 @@
   <div id="toast"></div>
   <input type="file" id="file" accept=".json,.csv,text/csv,application/json" hidden>
 
-  <script src="visual.js"></script>
-  <script src="timer.js"></script>
-  <script src="ricette.js"></script>
-  <script src="stampa.js"></script>
-  <script src="app.js"></script>
+  <script src="visual.js?v=5.1.1"></script>
+  <script src="timer.js?v=5.1.1"></script>
+  <script src="ricette.js?v=5.1.1"></script>
+  <script src="stampa.js?v=5.1.1"></script>
+  <script src="app.js?v=5.1.1"></script>
   <script>
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(r => r.update());
+      // quando arriva una versione nuova, ricarica una volta da sola
+      let ricaricata = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => { if (!ricaricata) { ricaricata = true; location.reload(); } });
+    }
   </script>
 </body>
 </html>
