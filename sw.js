@@ -1,5 +1,5 @@
 /* Service worker: prima la rete (così vedi sempre l'ultima versione), la copia salvata solo se sei offline */
-const VER = '5.1.1';
+const VER = '5.1.2';
 const CACHE = 'palestra-' + VER;
 const FILES = ['./', './index.html', './style.css', './app.js', './visual.js', './timer.js', './ricette.js', './stampa.js',
   './ricette.csv', './manifest.json', './icon.svg'];
