@@ -215,13 +215,15 @@ h3 { font-size: 15.5px; font-weight: 750; margin-bottom: 12px; letter-spacing: -
 .wk-prog button.ok { background: var(--green); }
 .wk-prog button.cur { outline: 2px solid var(--accent); outline-offset: 2px; }
 .wk-prog button.fin { flex: 0 0 18px; }
-.wk-nav { position: sticky; bottom: 0; display: grid; grid-template-columns: 56px 1fr; gap: 10px; margin: 4px -16px 0; padding: 22px 16px calc(14px + env(safe-area-inset-bottom));
+.wk-nav { position: fixed; left: 0; right: 0; bottom: 0; max-width: 600px; margin: 0 auto; display: grid; grid-template-columns: 56px 1fr; gap: 10px; padding: 22px 16px calc(14px + env(safe-area-inset-bottom));
   background: linear-gradient(to bottom, transparent, var(--bg) 38%); z-index: 5; }
 .wk-nav .btn { box-shadow: var(--shadow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wk-nav .btn:not(.primary) { background: var(--card-solid); border: 1px solid var(--border); }
 body.in-workout #nav { transform: translateY(110%); }
-body.in-workout #app { padding-bottom: 0; }
-body.in-workout #rest { bottom: calc(96px + env(safe-area-inset-bottom)); }
+/* Pulsanti Avanti/Indietro sempre in fondo, il recupero sempre appena sopra: non si sovrappongono mai */
+body.in-workout #app { padding-bottom: calc(180px + env(safe-area-inset-bottom)); }
+body.in-workout #rest { bottom: calc(92px + env(safe-area-inset-bottom)); }
+@media (min-width: 900px) { .wk-nav { max-width: 720px; } }
 
 .exercise .ex-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .exercise .ex-name { font-size: 21px; font-weight: 800; letter-spacing: -0.4px; }
