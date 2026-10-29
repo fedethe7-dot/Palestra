@@ -554,13 +554,15 @@ function viewHome() {
   const pr = Object.entries(records()).sort((a, b) => b[1].date.localeCompare(a[1].date))[0];
   const hello = db.settings.name ? `Ciao ${esc(db.settings.name)} 👋` : 'Ciao 👋';
   const oggi = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
-  const sc = next && db.schede[next];
+  const sc = next && db.schede[next], AUR = db.settings.accent === 'aurora';
+  const heroBg = s => { const e = (db.schede[s]?.esercizi || []).find(e => visualDi(e.nome, e.gruppo)?.slug);
+    return AUR && e ? `<div class="hero-bg" style="background-image:url('${IMG_ES}${visualDi(e.nome, e.gruppo).slug}-0.webp')"></div>` : ''; };
   const hero = db.draft
-    ? `<div class="card hero" style="${sesStyle(db.draft.session)}"><div class="row"><span class="muted">⚡ Allenamento in corso</span><span class="chip">Sessione ${db.draft.session}</span></div>
+    ? `<div class="card hero" style="${sesStyle(db.draft.session)}">${heroBg(db.draft.session)}<div class="row"><span class="muted">⚡ Allenamento in corso</span><span class="chip">Sessione ${db.draft.session}</span></div>
        <div class="big" style="margin:8px 0 4px">${esc(db.schede[db.draft.session]?.nome || '')}</div>
        <div class="muted" style="margin-bottom:14px">Esercizio ${Math.min(db.draft.cur + 1, db.draft.exercises.length)} di ${db.draft.exercises.length}</div>
        <button class="btn white full" data-action="go" data-view="allena">Continua ▶</button></div>`
-    : sc ? `<div class="card hero" style="${sesStyle(next)}"><div class="row"><span class="muted">🔥 Allenamento di oggi</span><span class="chip">Sessione ${next}</span></div>
+    : sc ? `<div class="card hero" style="${sesStyle(next)}">${heroBg(next)}<div class="row"><span class="muted">🔥 Allenamento di oggi</span><span class="chip">Sessione ${next}</span></div>
        <div class="big" style="margin:8px 0 6px">${esc(sc.nome)}</div>
        <div class="hero-ex">${sc.esercizi.map(e => `<span>${esc(e.nome)}</span>`).join('')}</div>
        <div class="muted" style="margin:10px 0 14px">${sc.esercizi.length} esercizi • ~${Math.round(sc.esercizi.reduce((s, e) => s + (e.serie || 3), 0) * 2.5)} min</div>
@@ -569,10 +571,11 @@ function viewHome() {
   const giorni = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
   const strip = `<div class="card week"><div class="row"><h3 style="margin:0">📅 Questa settimana</h3><span class="muted">🔥 ${streakWeeks()} sett. di fila</span></div>
     <div class="week-days">${giorni.map((g, i) => { const d = addDays(wk, i), w = ws.find(x => x.date === d);
+      if (AUR) return anelloGiorno(g, d, today, w);
       return `<div class="wd ${d === today ? 'today' : ''} ${d > today ? 'future' : ''}"><span>${g}</span><i class="${w ? 'on' : ''}" style="${w ? `background:var(--${w.session}, var(--accent))` : ''}">${w ? w.session : ''}</i></div>`; }).join('')}</div></div>`;
   const deltaTxt = delta == null ? '' : `<div class="${delta >= 0 ? 'up' : 'down'}" style="font-size:12px;font-weight:700;margin-top:4px">${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta)}% vs sett. scorsa</div>`;
   const pref = (db.ricette || []).filter(r => r.preferita);
-  return `${BETA ? '<div class="beta">🧪 Copia di prova: dati copiati, invio al foglio disattivato</div>' : ''}${head(hello, oggi)}${cardBeta()}${hero}${strip}
+  return `${BETA ? '<div class="beta">🧪 Copia di prova: dati copiati, invio al foglio disattivato</div>' : ''}${head(hello, oggi)}${cardBeta()}${hero}${strip}${AUR ? programmaOggi(next) : ''}
     <div class="grid2">
       ${stat('🗓️ Questo mese', thisMonth.length, 'allen.')}
       ${stat("⏳ Dall'ultimo", last ? daysBetween(last.date, today) : '—', last ? 'giorni' : '')}
@@ -584,6 +587,33 @@ function viewHome() {
       <div class="ric-mini">${pref.slice(0, 6).map(r => `<button data-action="ric-open" data-id="${esc(r.id)}">${emoDi(r)} ${esc(r.nome)}</button>`).join('')}</div></div>` : ''}
     ${last ? `<div class="card"><h3>Ultimo allenamento</h3>${workoutRow(last)}</div>`
            : `<div class="card">${emptyBox('Nessun allenamento registrato.<br>Inizia il primo oppure importa i tuoi dati da Profilo.')}</div>`}`;
+}
+/* Tema Aurora: anello di avanzamento per ogni giorno della settimana */
+function anelloGiorno(g, d, today, w) {
+  const dr = d === today && db.draft, C = 2 * Math.PI * 16;
+  const tot = dr ? dr.exercises.length : 0, fatti = dr ? dr.exercises.filter(exFatto).length : 0;
+  const quota = w ? 1 : dr ? fatti / (tot || 1) : 0;
+  const testo = w ? w.session : dr ? `${fatti}/${tot}` : '';
+  const col = w ? `var(--${w.session}, var(--accent))` : 'var(--sun)';
+  return `<div class="wd ring ${d === today ? 'today' : ''} ${d > today ? 'future' : ''}"><span>${g}</span>
+    <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" class="ring-bg"/>${quota ? `<circle cx="20" cy="20" r="16" class="ring-on" style="stroke:${col};stroke-dasharray:${C * quota} ${C}"/>` : ''}
+    <text x="20" y="24">${testo}</text></svg></div>`;
+}
+/* Tema Aurora: elenco degli esercizi della prossima sessione (o di quella in corso) */
+function programmaOggi(next) {
+  const dr = db.draft, s = dr ? dr.session : next, sc = db.schede[s];
+  if (!sc) return '';
+  const lista = dr ? dr.exercises : sc.esercizi;
+  return `<div class="prog-head"><b>Programma</b><span class="muted">Sessione ${s} • ${lista.length} esercizi</span></div>
+    ${lista.map((e, i) => {
+      const v = visualDi(e.nome, e.gruppo), n = e.sets ? e.sets.filter(x => x.done).length : 0, tot = e.sets ? e.sets.length : e.serie;
+      const pct = Math.round(n / (tot || 1) * 100), attivo = dr ? i === dr.cur : i === 0;
+      const kg = e.sets ? e.sets.find(x => x.kg !== '')?.kg : e.carico;
+      return `<div class="prog-item ${attivo ? 'on' : ''} ${dr && !attivo && pct < 100 && i > dr.cur ? 'dim' : ''}" data-action="go" data-view="allena">
+        <div class="prog-ico">${v?.slug ? `<img src="${IMG_ES}${v.slug}-0.webp" alt="" loading="lazy">` : '🏋️'}</div>
+        <div class="prog-txt"><div class="title">${esc(e.nome)}</div><div class="muted">${e.rip ? esc(e.rip) + ' rip' : esc(e.gruppo || '')}${kg ? ` • ${esc(kg)} kg` : ''}</div></div>
+        <div class="prog-dx">${dr ? `<span class="prog-pct ${pct === 100 ? 'ok' : ''}">${pct === 100 ? '✓' : pct + '%'}</span>` : ''}<span class="prog-serie">${tot} serie ›</span></div>
+      </div>`; }).join('')}`;
 }
 /* Allenamenti fatti nella copia di prova e non presenti qui */
 function allenamentiBeta() {
@@ -965,10 +995,10 @@ function viewProfilo() {
       <button class="btn full" data-action="import-json" style="margin-bottom:8px">⬆️ Ripristina backup</button>
       <button class="btn full" data-action="import-csv" style="margin-bottom:8px">📄 Importa da Fogli Google (CSV)</button>
       <button class="btn danger full" data-action="reset">🗑️ Cancella tutti i dati</button></div>
-    <p class="muted" style="text-align:center">Palestra v5.1.3${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
+    <p class="muted" style="text-align:center">Palestra v5.2.0${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
 }
 
-const COLORI = [['viola', 'Viola'], ['blu', 'Blu'], ['verde', 'Verde'], ['arancio', 'Arancio']];
+const COLORI = [['viola', 'Viola'], ['blu', 'Blu'], ['verde', 'Verde'], ['arancio', 'Arancio'], ['aurora', 'Aurora']];
 const GRUPPI_LIB = ['Tutti', ...new Set(LIBRERIA.map(x => x.gruppo))];
 function libLista() {
   const q = libQuery.trim().toLowerCase();
@@ -1124,10 +1154,12 @@ function go(v) {
   schermoAcceso(view === 'allena' && !!db.draft);
 }
 function applyTheme() {
-  const t = db.settings.theme, dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  // Aurora è sempre scuro
+  const t = db.settings.theme, aur = db.settings.accent === 'aurora';
+  const dark = aur || t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   document.documentElement.dataset.accent = db.settings.accent || 'viola';
-  $('meta[name=theme-color]').content = dark ? '#0b1120' : '#f1f5f9';
+  $('meta[name=theme-color]').content = aur ? '#120b18' : dark ? '#0b1120' : '#f1f5f9';
 }
 
 document.addEventListener('click', e => {
