@@ -767,7 +767,8 @@ function viewWorkout() {
   const d = db.draft, n = d.exercises.length, cur = Math.max(0, Math.min(d.cur || 0, n));
   const prog = `<div class="wk-prog">${d.exercises.map((e, i) => `<button class="${i === cur ? 'cur' : ''} ${exFatto(e) ? 'ok' : e.sets.some(s => s.done) ? 'half' : ''}" data-action="wk-go" data-i="${i}" aria-label="${esc(e.nome)}"></button>`).join('')}
     <button class="${cur === n ? 'cur' : ''} fin" data-action="wk-go" data-i="${n}" aria-label="Riepilogo"></button></div>`;
-  const top = `<div class="wk-top"><button class="icon-btn" data-action="wk-list" aria-label="Elenco esercizi">☰</button>
+  // ← torna alla Home: l'allenamento resta salvato e si riprende con "Continua"
+  const top = `<div class="wk-top"><button class="icon-btn" data-action="go" data-view="home" aria-label="Torna alla Home">←</button><button class="icon-btn" data-action="wk-list" aria-label="Elenco esercizi">☰</button>
     <div class="wk-tt"><b>Sessione ${esc(d.session)}</b><span class="muted">⏱️ <span data-elapsed>0 min</span> • ${cur < n ? `esercizio ${cur + 1} di ${n}` : 'riepilogo'}</span></div>
     <span class="chip ${d.session}">${esc(d.session)}</span></div>`;
   const lista = wkList ? `<div class="sheet-bg" data-action="wk-list"></div><div class="sheet"><h3>Esercizi</h3>
@@ -1051,7 +1052,7 @@ function viewProfilo() {
       <button class="btn full" data-action="import-json" style="margin-bottom:8px">⬆️ Ripristina backup</button>
       <button class="btn full" data-action="import-csv" style="margin-bottom:8px">📄 Importa da Fogli Google (CSV)</button>
       <button class="btn danger full" data-action="reset">🗑️ Cancella tutti i dati</button></div>
-    <p class="muted" style="text-align:center">Palestra v5.4.0${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
+    <p class="muted" style="text-align:center">Palestra v5.4.1${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
 }
 
 const COLORI = [['viola', 'Viola'], ['blu', 'Blu'], ['verde', 'Verde'], ['arancio', 'Arancio'], ['aurora', 'Aurora'], ['natura', 'Natura']];
