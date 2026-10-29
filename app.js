@@ -743,9 +743,7 @@ function exerciseFocus(e, i, date) {
   const meta = [`${e.serie} × ${esc(e.rip)}${e.tipo === 'tempo' ? ' sec' : ''}`,
     e.carico ? esc(e.carico) + (num(e.carico) != null ? ' kg' : '') : '',
     e.recupero ? '⏱️ ' + esc(e.recupero) : '', e.note ? esc(e.note) : ''].filter(Boolean).join(' • ');
-  const v = NUOVO() && visualDi(e.nome, e.gruppo);
-  const foto = v?.slug ? `<div class="ex-foto" style="background-image:url('${IMG_ES}${v.slug}-1.webp')"></div>` : '';
-  return `<div class="card exercise focus">${foto}
+  return `<div class="card exercise focus">
     <div class="ex-head"><div><div class="ex-name">${esc(e.nome)}</div><div class="ex-meta">${meta}</div></div>
       <div class="ex-tags"><span class="chip">${esc(e.gruppo)}</span><button class="info-btn" data-action="lib-info" data-nome="${esc(e.nome)}" aria-label="Foto, muscoli e tecnica">ℹ️</button></div></div>
     ${visualBlock(e.nome, e.gruppo, { noFoto: true })}
@@ -1050,7 +1048,7 @@ function viewProfilo() {
       <button class="btn full" data-action="import-json" style="margin-bottom:8px">⬆️ Ripristina backup</button>
       <button class="btn full" data-action="import-csv" style="margin-bottom:8px">📄 Importa da Fogli Google (CSV)</button>
       <button class="btn danger full" data-action="reset">🗑️ Cancella tutti i dati</button></div>
-    <p class="muted" style="text-align:center">Palestra v5.3.0${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
+    <p class="muted" style="text-align:center">Palestra v5.3.1${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
 }
 
 const COLORI = [['viola', 'Viola'], ['blu', 'Blu'], ['verde', 'Verde'], ['arancio', 'Arancio'], ['aurora', 'Aurora'], ['natura', 'Natura']];

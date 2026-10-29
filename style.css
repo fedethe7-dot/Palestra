@@ -673,9 +673,7 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
 .sf-go:active { transform: scale(.95); }
 [data-stile="nuovo"] .ses-foto { box-shadow: 0 16px 40px rgba(0, 0, 0, .35) !important; }
 
-/* Allenamento: foto grande e pulsante FATTO */
-.ex-foto { margin: -16px -16px 14px; height: 210px; background: #fff center 35% / cover no-repeat; border-radius: var(--radius) var(--radius) 0 0; position: relative; }
-.ex-foto::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, .35)); border-radius: inherit; }
+/* Allenamento: pulsante FATTO */
 .fatto-bar { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 4px 0 18px; }
 .fb-pill { flex: 1; max-width: 120px; min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 999px;
   background: var(--card); border: 1px solid var(--border); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
