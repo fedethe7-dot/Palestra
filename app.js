@@ -531,6 +531,9 @@ const PERIODI = [[7, '7g'], [30, '30g'], [90, '3m'], [180, '6m'], [365, '1a'], [
 const periodSeg = () => `<div class="seg">${PERIODI.map(([d, l]) => `<button class="${period === d ? 'active' : ''}" data-action="period" data-days="${d}">${l}</button>`).join('')}</div>`;
 /* Temi Aurora e Natura: stesso aspetto nuovo, colori diversi */
 const NUOVO = () => ['aurora', 'natura'].includes(db.settings.accent);
+// Fase strutturale (Allena a card, pulsante FATTO, ricette a file, riquadri Progressi): pronta ma spenta per ora
+const STRUTTURA = false;
+const NUOVA_STRUTTURA = () => STRUTTURA && NUOVO();
 const STAT_ICO = { 'Peso': '⚖️', 'BMI': '📏', 'Grasso': '💧', 'Massa magra': '💪', 'Metabolismo basale': '🔥', 'Fabbisogno totale': '🍽️' };
 const stat = (label, value, unit = '', extra = '') => {
   if (!NUOVO()) return `<div class="card stat"><div class="label">${label}</div><div class="value">${value} <small>${unit}</small></div>${extra}</div>`;
@@ -682,7 +685,7 @@ function viewAllenaNuovo(ws) {
 function viewAllena() {
   if (db.draft) return viewWorkout();
   const ws = sorted().reverse();
-  if (NUOVO()) return viewAllenaNuovo(ws);
+  if (NUOVA_STRUTTURA()) return viewAllenaNuovo(ws);
   const cards = Object.entries(db.schede).map(([s, sc]) => {
     const l = ws.find(w => w.session === s);
     return `<div class="card ses-card" style="--ses:var(--${s}, var(--accent))"><div class="row"><span class="chip ${s}">Sessione ${s}</span><span class="muted">${l ? 'Ultima: ' + fmtDate(l.date) : 'Mai fatta'}</span></div>
@@ -748,7 +751,7 @@ function exerciseFocus(e, i, date) {
       <div class="ex-tags"><span class="chip">${esc(e.gruppo)}</span><button class="info-btn" data-action="lib-info" data-nome="${esc(e.nome)}" aria-label="Foto, muscoli e tecnica">ℹ️</button></div></div>
     ${visualBlock(e.nome, e.gruppo, { noFoto: true })}
     ${e.tipo === 'tempo' ? timerPanel(e) : ''}
-    ${setRows(e, i, last)}</div>${NUOVO() && e.tipo !== 'tempo' ? fattoBar(e, i) : ''}`;
+    ${setRows(e, i, last)}</div>${NUOVA_STRUTTURA() && e.tipo !== 'tempo' ? fattoBar(e, i) : ''}`;
 }
 /* Temi nuovi: pulsante tondo grande per segnare la serie successiva */
 function fattoBar(e, i) {
@@ -843,7 +846,7 @@ function viewProgressi() {
     .sort((a, b) => a.date.localeCompare(b.date)).map(p => ({ x: p.date, y: p.kg }));
   if (progTab === 'stats') return viewStats();
   const kcal = ws.reduce((t, w) => t + (num(w.kcal) || 0), 0), vol = ws.reduce((t, w) => t + wVolume(w), 0);
-  const riassunto = NUOVO() ? `<div class="grid3">${stat('🏋️ Allenam.', ws.length)}${stat('📦 Volume', fmt(vol / 1000, 1), 't')}${stat('🔥 Kcal', fmt(kcal))}</div>` : '';
+  const riassunto = NUOVA_STRUTTURA() ? `<div class="grid3">${stat('🏋️ Allenam.', ws.length)}${stat('📦 Volume', fmt(vol / 1000, 1), 't')}${stat('🔥 Kcal', fmt(kcal))}</div>` : '';
   return `${head('Progressi 📈')}${progTabs()}${periodSeg()}${riassunto}
     <div class="card"><h3>📦 Volume per allenamento (kg)</h3>${barChart(bars)}</div>
     <div class="card"><h3>🏋️ Progressione esercizio</h3>
@@ -1048,7 +1051,7 @@ function viewProfilo() {
       <button class="btn full" data-action="import-json" style="margin-bottom:8px">⬆️ Ripristina backup</button>
       <button class="btn full" data-action="import-csv" style="margin-bottom:8px">📄 Importa da Fogli Google (CSV)</button>
       <button class="btn danger full" data-action="reset">🗑️ Cancella tutti i dati</button></div>
-    <p class="muted" style="text-align:center">Palestra v5.3.1${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
+    <p class="muted" style="text-align:center">Palestra v5.4.0${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
 }
 
 const COLORI = [['viola', 'Viola'], ['blu', 'Blu'], ['verde', 'Verde'], ['arancio', 'Arancio'], ['aurora', 'Aurora'], ['natura', 'Natura']];
