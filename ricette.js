@@ -45,7 +45,7 @@ function ricettaCard(r) {
   const [, , c1, c2] = catDi(r.categoria), emo = emoDi(r), m = ricMacro(r).por, min = (r.prep || 0) + (r.cottura || 0);
   return `<button class="ric-card" data-action="ric-open" data-id="${esc(r.id)}">
     <div class="ric-img" style="--c1:${c1};--c2:${c2}">${r.foto ? `<img src="${esc(r.foto)}" alt="" loading="lazy">` : `<span>${emo}</span>`}
-      ${r.preferita ? '<i class="ric-star">⭐</i>' : ''}</div>
+      ${r.preferita ? '<i class="ric-star">⭐</i>' : NUOVO() ? '<i class="ric-star vuota">♡</i>' : ''}</div>
     <div class="ric-body"><div class="title">${esc(r.nome)}</div>
       <div class="ric-meta"><span>🔥 ${fmt(m.kcal)} kcal</span><span>💪 ${fmt(m.p)} g</span>${min ? `<span>⏱️ ${min}′</span>` : ''}</div></div></button>`;
 }
@@ -53,6 +53,15 @@ function ricLista() {
   const q = ricQuery.trim().toLowerCase();
   const lista = (db.ricette || []).filter(r => (ricCat === 'Tutte' || (ricCat === '⭐' ? r.preferita : r.categoria === ricCat)) &&
     (!q || `${r.nome} ${r.ingredienti.map(i => i.nome).join(' ')}`.toLowerCase().includes(q)));
+  // Temi nuovi: senza filtri, una fila che scorre per ogni categoria
+  if (NUOVO() && ricCat === 'Tutte' && !q && lista.length) {
+    const fila = (tit, rr, c) => rr.length ? `<div class="ric-fila"><div class="row"><h3>${tit}</h3><button class="link" data-action="ric-cat" data-c="${esc(c)}">Tutte ›</button></div>
+      <div class="ric-scorri">${rr.map(ricettaCard).join('')}</div></div>` : '';
+    const altre = lista.filter(r => !CATEGORIE.some(c => c[0] === r.categoria));
+    return `<div class="ric-caros-wrap">${fila('⭐ Preferite', lista.filter(r => r.preferita), '⭐')}
+      ${CATEGORIE.map(([c, emo]) => fila(`${emo} ${c}`, lista.filter(r => r.categoria === c), c)).join('')}
+      ${altre.length ? `<div class="ric-fila"><h3>🍴 Altro</h3><div class="ric-scorri">${altre.map(ricettaCard).join('')}</div></div>` : ''}</div>`;
+  }
   return lista.length ? lista.map(ricettaCard).join('') : `<div class="card">${emptyBox(ricCat === '⭐' ? 'Nessuna preferita: tocca la ⭐ in una ricetta' : 'Nessuna ricetta trovata')}</div>`;
 }
 function viewRicette() {

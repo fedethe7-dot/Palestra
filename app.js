@@ -517,8 +517,9 @@ function barChart(items) {
   const max = Math.max(...items.map(i => i.value), 1), bw = (W - P.l - P.r) / items.length, step = Math.ceil(items.length / 6);
   const grid = [0, 0.5, 1].map(f => { const yy = P.t + (1 - f) * (H - P.t - P.b);
     return `<line class="grid" x1="${P.l}" x2="${W - P.r}" y1="${yy}" y2="${yy}"/><text x="${P.l - 6}" y="${yy + 3}" text-anchor="end">${fmt(max * f / 1000, 1)}k</text>`; }).join('');
+  const tondo = NUOVO();
   const bars = items.map((it, i) => { const h = (it.value / max) * (H - P.t - P.b), xx = P.l + i * bw + bw * 0.15;
-    return `<rect x="${xx}" y="${H - P.b - h}" width="${bw * 0.7}" height="${h}" rx="3" style="fill:${it.color}"/>${i % step === 0 ? `<text x="${xx + bw * 0.35}" y="${H - 6}" text-anchor="middle">${it.label}</text>` : ''}`; }).join('');
+    return `${tondo ? `<rect class="bar-trk" x="${xx}" y="${P.t}" width="${bw * 0.7}" height="${H - P.t - P.b}" rx="${Math.min(bw * 0.35, 8)}"/>` : ''}<rect x="${xx}" y="${H - P.b - h}" width="${bw * 0.7}" height="${h}" rx="${tondo ? Math.min(bw * 0.35, 8) : 3}" style="fill:${it.color}"/>${i % step === 0 ? `<text x="${xx + bw * 0.35}" y="${H - 6}" text-anchor="middle">${it.label}</text>` : ''}`; }).join('');
   return `<svg class="chart" viewBox="0 0 ${W} ${H}">${grid}${bars}</svg>
     <div style="margin-top:8px;display:flex;gap:6px">${Object.keys(db.schede).map(s => `<span class="chip ${s}">${s}</span>`).join('')}</div>`;
 }
@@ -528,7 +529,15 @@ let view = 'home', period = 30, chartEx = null, openW = null, editS = null;
 let libGruppo = 'Tutti', libQuery = '', libOpen = null, libFrom = 'allena';
 const PERIODI = [[7, '7g'], [30, '30g'], [90, '3m'], [180, '6m'], [365, '1a'], [0, 'Tutto']];
 const periodSeg = () => `<div class="seg">${PERIODI.map(([d, l]) => `<button class="${period === d ? 'active' : ''}" data-action="period" data-days="${d}">${l}</button>`).join('')}</div>`;
-const stat = (label, value, unit = '', extra = '') => `<div class="card stat"><div class="label">${label}</div><div class="value">${value} <small>${unit}</small></div>${extra}</div>`;
+/* Temi Aurora e Natura: stesso aspetto nuovo, colori diversi */
+const NUOVO = () => ['aurora', 'natura'].includes(db.settings.accent);
+const STAT_ICO = { 'Peso': '⚖️', 'BMI': '📏', 'Grasso': '💧', 'Massa magra': '💪', 'Metabolismo basale': '🔥', 'Fabbisogno totale': '🍽️' };
+const stat = (label, value, unit = '', extra = '') => {
+  if (!NUOVO()) return `<div class="card stat"><div class="label">${label}</div><div class="value">${value} <small>${unit}</small></div>${extra}</div>`;
+  // icona tonda a sinistra (l'emoji iniziale dell'etichetta, o quella della tabella)
+  const m = label.match(/^(\p{Extended_Pictographic}\uFE0F?)\s*(.*)$/u), ico = m ? m[1] : STAT_ICO[label] || '•', txt = m ? m[2] : label;
+  return `<div class="card stat"><div class="st-top"><i class="st-ico">${ico}</i><div class="label">${txt}</div></div><div class="value">${value} <small>${unit}</small></div>${extra}</div>`;
+};
 
 function workoutRow(w, actions = false) {
   const open = actions && openW === w.id;
@@ -554,7 +563,7 @@ function viewHome() {
   const pr = Object.entries(records()).sort((a, b) => b[1].date.localeCompare(a[1].date))[0];
   const hello = db.settings.name ? `Ciao ${esc(db.settings.name)} 👋` : 'Ciao 👋';
   const oggi = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
-  const sc = next && db.schede[next], AUR = db.settings.accent === 'aurora';
+  const sc = next && db.schede[next], AUR = NUOVO();
   const heroBg = s => { const e = (db.schede[s]?.esercizi || []).find(e => visualDi(e.nome, e.gruppo)?.slug);
     return AUR && e ? `<div class="hero-bg" style="background-image:url('${IMG_ES}${visualDi(e.nome, e.gruppo).slug}-0.webp')"></div>` : ''; };
   const hero = db.draft
@@ -634,14 +643,46 @@ function cardBeta() {
 }
 /* Colore della sessione per le card principali (A blu, B arancio, C verde, altre col colore del tema) */
 const SES_GRAD = { A: ['#3b82f6', '#6366f1'], B: ['#f97316', '#ef4444'], C: ['#10b981', '#0ea5e9'] };
+const SES_GRAD_TEMA = {
+  aurora: { A: ['#a855f7', '#db2777'], B: ['#db2777', '#f97316'], C: ['#6d28d9', '#c026d3'] },
+  natura: { A: ['#3f9a5c', '#14532d'], B: ['#65a30d', '#1d5e36'], C: ['#0f766e', '#14532d'] } };
 function sesStyle(s) {
-  const g = SES_GRAD[s]; if (!g) return '';
+  const g = (SES_GRAD_TEMA[db.settings.accent] || SES_GRAD)[s]; if (!g) return '';
   return `background:linear-gradient(135deg, ${g[0]}, ${g[1]});box-shadow:0 12px 32px ${g[0]}55`;
 }
 
+let allTab = 'sessioni';
+/* Foto del primo esercizio illustrato della sessione */
+function fotoSessione(s) {
+  const e = (db.schede[s]?.esercizi || []).find(e => visualDi(e.nome, e.gruppo)?.slug);
+  return e ? `${IMG_ES}${visualDi(e.nome, e.gruppo).slug}-0.webp` : '';
+}
+function viewAllenaNuovo(ws) {
+  const tabs = `<div class="seg pill-tabs">${[['sessioni', 'Sessioni'], ['storico', `Storico <sup>${ws.length}</sup>`]].map(([k, l]) =>
+    `<button class="${allTab === k ? 'active' : ''}" data-action="all-tab" data-t="${k}">${l}</button>`).join('')}</div>`;
+  if (allTab === 'storico') return `${head('Allenamento', 'Tutti gli allenamenti fatti')}${tabs}
+    <div class="card">${ws.length ? ws.slice(0, 40).map(w => workoutRow(w, true)).join('') : emptyBox('Ancora nessun allenamento')}</div>`;
+  const next = nextSession();
+  const cards = Object.entries(db.schede).map(([s, sc]) => {
+    const l = ws.find(w => w.session === s), foto = fotoSessione(s);
+    const min = Math.round(sc.esercizi.reduce((t, e) => t + (e.serie || 3), 0) * 2.5);
+    return `<div class="ses-foto" style="${sesStyle(s)}">${foto ? `<div class="hero-bg" style="background-image:url('${foto}')"></div>` : ''}
+      <div class="row"><span class="chip">Sessione ${s}</span>${s === next ? '<span class="chip oggi">Oggi</span>' : ''}</div>
+      <div class="sf-nome">${esc(sc.nome)}</div>
+      <div class="sf-meta"><span>🏋️ ${sc.esercizi.length} esercizi</span><span>⏱️ ~${min}′</span><span>${l ? '🕑 ' + fmtDate(l.date) : '✨ Mai fatta'}</span></div>
+      <div class="row sf-fondo"><span class="sf-ex">${sc.esercizi.map(e => esc(e.nome)).join(' • ') || 'Nessun esercizio'}</span>
+        <button class="sf-go" data-action="start" data-s="${s}">Inizia ›</button></div></div>`;
+  }).join('');
+  return `${head('Allenamento', 'Scegli la sessione da fare')}${tabs}${cards}
+    <div class="grid2">
+      <button class="btn full" data-action="go" data-view="schede">✏️ Modifica</button>
+      <button class="btn full" data-action="lib-open" data-from="allena">📚 Libreria</button>
+    </div>`;
+}
 function viewAllena() {
   if (db.draft) return viewWorkout();
   const ws = sorted().reverse();
+  if (NUOVO()) return viewAllenaNuovo(ws);
   const cards = Object.entries(db.schede).map(([s, sc]) => {
     const l = ws.find(w => w.session === s);
     return `<div class="card ses-card" style="--ses:var(--${s}, var(--accent))"><div class="row"><span class="chip ${s}">Sessione ${s}</span><span class="muted">${l ? 'Ultima: ' + fmtDate(l.date) : 'Mai fatta'}</span></div>
@@ -702,12 +743,24 @@ function exerciseFocus(e, i, date) {
   const meta = [`${e.serie} × ${esc(e.rip)}${e.tipo === 'tempo' ? ' sec' : ''}`,
     e.carico ? esc(e.carico) + (num(e.carico) != null ? ' kg' : '') : '',
     e.recupero ? '⏱️ ' + esc(e.recupero) : '', e.note ? esc(e.note) : ''].filter(Boolean).join(' • ');
-  return `<div class="card exercise focus">
+  const v = NUOVO() && visualDi(e.nome, e.gruppo);
+  const foto = v?.slug ? `<div class="ex-foto" style="background-image:url('${IMG_ES}${v.slug}-1.webp')"></div>` : '';
+  return `<div class="card exercise focus">${foto}
     <div class="ex-head"><div><div class="ex-name">${esc(e.nome)}</div><div class="ex-meta">${meta}</div></div>
       <div class="ex-tags"><span class="chip">${esc(e.gruppo)}</span><button class="info-btn" data-action="lib-info" data-nome="${esc(e.nome)}" aria-label="Foto, muscoli e tecnica">ℹ️</button></div></div>
     ${visualBlock(e.nome, e.gruppo, { noFoto: true })}
     ${e.tipo === 'tempo' ? timerPanel(e) : ''}
-    ${setRows(e, i, last)}</div>`;
+    ${setRows(e, i, last)}</div>${NUOVO() && e.tipo !== 'tempo' ? fattoBar(e, i) : ''}`;
+}
+/* Temi nuovi: pulsante tondo grande per segnare la serie successiva */
+function fattoBar(e, i) {
+  const j = e.sets.findIndex(s => !s.done), tutte = j < 0, s = e.sets[j];
+  const kg = s && e.tipo === 'carico' && s.kg !== '' ? `${fmt(num(s.kg), 2)} kg` : e.tipo === 'carico' ? '— kg' : 'corpo libero';
+  return `<div class="fatto-bar">
+    <div class="fb-pill"><b>${tutte ? e.sets.length : j + 1}/${e.sets.length}</b><span>serie</span></div>
+    ${tutte ? `<button class="fatto-btn ok" data-action="wk-go" data-i="${i + 1}">✓<small>Avanti</small></button>`
+      : `<button class="fatto-btn" data-action="done" data-ex="${i}" data-set="${j}">FATTO<small>serie ${j + 1}</small></button>`}
+    <div class="fb-pill"><b>${tutte ? '🏁' : esc(kg)}</b><span>${tutte ? 'finito' : e.recupero ? '⏱️ ' + esc(e.recupero) : 'carico'}</span></div></div>`;
 }
 function viewWorkout() {
   const d = db.draft, n = d.exercises.length, cur = Math.max(0, Math.min(d.cur || 0, n));
@@ -791,7 +844,9 @@ function viewProgressi() {
   const wPts = [...db.weights].filter(p => !period || p.date >= isoFrom(period))
     .sort((a, b) => a.date.localeCompare(b.date)).map(p => ({ x: p.date, y: p.kg }));
   if (progTab === 'stats') return viewStats();
-  return `${head('Progressi 📈')}${progTabs()}${periodSeg()}
+  const kcal = ws.reduce((t, w) => t + (num(w.kcal) || 0), 0), vol = ws.reduce((t, w) => t + wVolume(w), 0);
+  const riassunto = NUOVO() ? `<div class="grid3">${stat('🏋️ Allenam.', ws.length)}${stat('📦 Volume', fmt(vol / 1000, 1), 't')}${stat('🔥 Kcal', fmt(kcal))}</div>` : '';
+  return `${head('Progressi 📈')}${progTabs()}${periodSeg()}${riassunto}
     <div class="card"><h3>📦 Volume per allenamento (kg)</h3>${barChart(bars)}</div>
     <div class="card"><h3>🏋️ Progressione esercizio</h3>
       ${names.length ? `<select id="ex-select">${names.map(n => `<option ${n === chartEx ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
@@ -995,10 +1050,10 @@ function viewProfilo() {
       <button class="btn full" data-action="import-json" style="margin-bottom:8px">⬆️ Ripristina backup</button>
       <button class="btn full" data-action="import-csv" style="margin-bottom:8px">📄 Importa da Fogli Google (CSV)</button>
       <button class="btn danger full" data-action="reset">🗑️ Cancella tutti i dati</button></div>
-    <p class="muted" style="text-align:center">Palestra v5.2.0${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
+    <p class="muted" style="text-align:center">Palestra v5.3.0${BETA ? ' (prova)' : ''} • ${db.workouts.length} allenamenti • ${(db.ricette || []).length} ricette</p>`;
 }
 
-const COLORI = [['viola', 'Viola'], ['blu', 'Blu'], ['verde', 'Verde'], ['arancio', 'Arancio'], ['aurora', 'Aurora']];
+const COLORI = [['viola', 'Viola'], ['blu', 'Blu'], ['verde', 'Verde'], ['arancio', 'Arancio'], ['aurora', 'Aurora'], ['natura', 'Natura']];
 const GRUPPI_LIB = ['Tutti', ...new Set(LIBRERIA.map(x => x.gruppo))];
 function libLista() {
   const q = libQuery.trim().toLowerCase();
@@ -1154,12 +1209,13 @@ function go(v) {
   schermoAcceso(view === 'allena' && !!db.draft);
 }
 function applyTheme() {
-  // Aurora è sempre scuro
-  const t = db.settings.theme, aur = db.settings.accent === 'aurora';
+  // Aurora e Natura sono sempre scuri e hanno l'aspetto nuovo
+  const t = db.settings.theme, aur = NUOVO();
+  document.documentElement.dataset.stile = aur ? 'nuovo' : '';
   const dark = aur || t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   document.documentElement.dataset.accent = db.settings.accent || 'viola';
-  $('meta[name=theme-color]').content = aur ? '#120b18' : dark ? '#0b1120' : '#f1f5f9';
+  $('meta[name=theme-color]').content = aur ? (db.settings.accent === 'natura' ? '#0a1a10' : '#120b18') : dark ? '#0b1120' : '#f1f5f9';
 }
 
 document.addEventListener('click', e => {
@@ -1185,6 +1241,7 @@ document.addEventListener('click', e => {
     case 'work-dur': workSetDur(+el.dataset.s); break;
     case 'vfoto': el.classList.toggle('paused'); break;
     case 'prog-tab': progTab = el.dataset.t; render(); break;
+    case 'all-tab': allTab = el.dataset.t; render(); break;
     case 'beta-importa': {
       const extra = allenamentiBeta();
       extra.forEach(w => { const x = { ...w, date: normDate(w.date), synced: false }; db.workouts.push(x); db.outbox.push(workoutPayload(x)); });
@@ -1205,6 +1262,7 @@ document.addEventListener('click', e => {
       }
       save(); el.classList.toggle('ok', s.done); el.closest('.set-row')?.classList.toggle('is-done', s.done);
       if (s.done) { vibra(25); startRest(restSec(db.draft.exercises[ex].recupero)); } else stopRest();
+      if (el.classList.contains('fatto-btn')) { render(); break; }
       // Barra di avanzamento aggiornata senza ridisegnare la pagina
       const e2 = db.draft.exercises[ex], dot = document.querySelectorAll('.wk-prog button')[ex];
       if (dot) { dot.classList.toggle('ok', exFatto(e2)); dot.classList.toggle('half', !exFatto(e2) && e2.sets.some(x => x.done)); }
