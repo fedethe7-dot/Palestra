@@ -1,0 +1,293 @@
+﻿ID;Nome ricetta;Categoria;Porzioni;Prep (min);Cottura (min);Ingrediente;Grammi;Kcal /100g;Proteine /100g;Carboidrati /100g;Grassi /100g;Procedimento;Note;Preferita;Foto
+col-cornflakes-yogurt;Corn flakes proteici con yogurt greco;Colazioni veloci;1;3;0;Yogurt greco 0%;170;57;10;4;0,2;"1. Metti lo yogurt greco nella tazza e allungalo con la bevanda d'avena.
+2. Aggiungi la banana a rondelle e il cacao, mescola.
+3. Versa i corn flakes all'ultimo, così restano croccanti.";Lo yogurt greco al posto di parte della bevanda d'avena triplica le proteine della tua colazione solita.;;
+col-cornflakes-yogurt;;;;;;Corn flakes;50;378;7;84;0,9;;;;
+col-cornflakes-yogurt;;;;;;Bevanda d'avena;100;46;1;6,6;1,5;;;;
+col-cornflakes-yogurt;;;;;;Banana (sbucciata);80;89;1,1;23;0,3;;;;
+col-cornflakes-yogurt;;;;;;Cacao amaro in polvere;5;355;20,4;11,5;25,6;;;;
+col-fette-arachidi;Fette biscottate, burro d'arachidi e yogurt;Colazioni veloci;1;4;0;Fette biscottate integrali;40;400;13;68;6,5;"1. Spalma il burro d'arachidi sulle fette biscottate (circa 5 fette).
+2. Aggiungi sopra qualche rondella di banana.
+3. Accompagna con lo yogurt greco in una ciotola.";Il burro d'arachidi al posto delle Gocciole: più proteine e meno zuccheri.;;
+col-fette-arachidi;;;;;;Burro d'arachidi 100%;20;600;25;12;49;;;;
+col-fette-arachidi;;;;;;Banana (sbucciata);60;89;1,1;23;0,3;;;;
+col-fette-arachidi;;;;;;Yogurt greco 0%;150;57;10;4;0,2;;;;
+col-porridge-cacao;Porridge al cacao in 3 minuti;Colazioni veloci;1;2;3;Fiocchi d'avena;60;372;13,5;60;7;"1. In una tazza grande mescola avena, bevanda d'avena, 100 ml d'acqua e il cacao.
+2. Microonde 90 secondi, mescola.
+3. Aggiungi l'albume mescolando bene e rimetti 60-90 secondi finché è cremoso.
+4. Completa con la banana a rondelle.";L'albume va mescolato subito, altrimenti si rapprende a pezzetti.;;
+col-porridge-cacao;;;;;;Bevanda d'avena;150;46;1;6,6;1,5;;;;
+col-porridge-cacao;;;;;;Albume;100;43;10,7;0;0;;;;
+col-porridge-cacao;;;;;;Cacao amaro in polvere;8;355;20,4;11,5;25,6;;;;
+col-porridge-cacao;;;;;;Banana (sbucciata);60;89;1,1;23;0,3;;;;
+col-uova-cotto;Uova strapazzate, prosciutto cotto e fette biscottate;Colazioni veloci;1;3;4;Uova intere;120;128;12,4;0;8,7;"1. Sbatti le 2 uova con l'albume e un pizzico di sale.
+2. Scalda una padella antiaderente con un filo d'olio, versa e mescola a fuoco medio per 2-3 minuti.
+3. Aggiungi il prosciutto a pezzetti a fine cottura.
+4. Servi con le fette biscottate.";Colazione salata da giorno di allenamento.;;
+col-uova-cotto;;;;;;Albume;60;43;10,7;0;0;;;;
+col-uova-cotto;;;;;;Prosciutto cotto sgrassato;50;130;20;1;5;;;;
+col-uova-cotto;;;;;;Fette biscottate integrali;30;400;13;68;6,5;;;;
+col-uova-cotto;;;;;;Olio extravergine d'oliva;3;884;0;0;100;;;;
+dol-pancake-banana;Pancake avena e banana;Pancake e dolci fit;1;5;8;Fiocchi d'avena;60;372;13,5;60;7;"1. Frulla l'avena fino a farla diventare farina.
+2. Schiaccia la banana e aggiungi uovo, albume e bevanda d'avena.
+3. Unisci avena e lievito e lascia riposare 5 minuti.
+4. Cuoci in padella antiaderente a fuoco medio-basso, un mestolino alla volta, circa 2 minuti per lato.
+5. Completa con il burro d'arachidi.";Escono 6-8 pancake. Se la banana è molto matura non serve zucchero.;;
+dol-pancake-banana;;;;;;Uova intere;60;128;12,4;0;8,7;;;;
+dol-pancake-banana;;;;;;Albume;120;43;10,7;0;0;;;;
+dol-pancake-banana;;;;;;Banana (sbucciata);100;89;1,1;23;0,3;;;;
+dol-pancake-banana;;;;;;Bevanda d'avena;50;46;1;6,6;1,5;;;;
+dol-pancake-banana;;;;;;Lievito per dolci;4;100;0;25;0;;;;
+dol-pancake-banana;;;;;;Burro d'arachidi 100%;10;600;25;12;49;;;;
+dol-pancake-cacao;Pancake al cacao con yogurt greco;Pancake e dolci fit;1;5;8;Fiocchi d'avena;60;372;13,5;60;7;"1. Frulla l'avena con il cacao.
+2. Aggiungi uovo, albume, bevanda d'avena e lievito e mescola fino a un impasto liscio.
+3. Cuoci a fuoco medio-basso, 2 minuti per lato.
+4. Servi con lo yogurt greco e un filo di miele sopra.";Sapore da Gocciole extra dark, ma con 40 g di proteine.;;
+dol-pancake-cacao;;;;;;Uova intere;60;128;12,4;0;8,7;;;;
+dol-pancake-cacao;;;;;;Albume;120;43;10,7;0;0;;;;
+dol-pancake-cacao;;;;;;Cacao amaro in polvere;10;355;20,4;11,5;25,6;;;;
+dol-pancake-cacao;;;;;;Bevanda d'avena;60;46;1;6,6;1,5;;;;
+dol-pancake-cacao;;;;;;Lievito per dolci;4;100;0;25;0;;;;
+dol-pancake-cacao;;;;;;Yogurt greco 0%;100;57;10;4;0,2;;;;
+dol-pancake-cacao;;;;;;Miele;10;304;0,3;82;0;;;;
+dol-mug-cake;Mug cake al cacao al microonde;Pancake e dolci fit;1;3;2;Albume;100;43;10,7;0;0;"1. In una tazza grande schiaccia la banana.
+2. Aggiungi albume, avena, cacao e lievito e mescola bene.
+3. Metti sopra il cioccolato a pezzetti.
+4. Microonde alla massima potenza per circa 90-120 secondi: deve restare morbida al centro.";Per lo sgarro dolce della sera senza sensi di colpa.;;
+dol-mug-cake;;;;;;Fiocchi d'avena;30;372;13,5;60;7;;;;
+dol-mug-cake;;;;;;Cacao amaro in polvere;10;355;20,4;11,5;25,6;;;;
+dol-mug-cake;;;;;;Banana (sbucciata);50;89;1,1;23;0,3;;;;
+dol-mug-cake;;;;;;Lievito per dolci;3;100;0;25;0;;;;
+dol-mug-cake;;;;;;Cioccolato fondente 70%;10;580;8;33;42;;;;
+dol-tiramisu;Tiramisù fit al bicchiere;Pancake e dolci fit;1;5;0;Yogurt greco 0%;170;57;10;4;0,2;"1. Mescola lo yogurt greco con il miele.
+2. Bagna velocemente le fette biscottate nel caffè (circa 50 ml, senza zucchero).
+3. In un bicchiere alterna fette biscottate e crema di yogurt.
+4. Spolvera di cacao e lascia in frigo almeno 15 minuti.";Il caffè non conta nei valori.;;
+dol-tiramisu;;;;;;Fette biscottate integrali;20;400;13;68;6,5;;;;
+dol-tiramisu;;;;;;Cacao amaro in polvere;5;355;20,4;11,5;25,6;;;;
+dol-tiramisu;;;;;;Miele;10;304;0,3;82;0;;;;
+pra-trofie-pesto;Trofie al pesto con pollo e fagiolini;Pranzi;1;10;15;Trofie secche;90;355;12,5;71;1,5;"1. Metti a bollire l'acqua salata con le patate a cubetti e i fagiolini a pezzi.
+2. Dopo 5 minuti butta le trofie e cuoci per il tempo indicato.
+3. Intanto cuoci il pollo a cubetti in padella antiaderente, 6-8 minuti.
+4. Scola tutto, condisci col pesto e un cucchiaio d'acqua di cottura, aggiungi pollo e parmigiano.";È la vera pasta al pesto genovese con patate e fagiolini, più il pollo per le proteine.;;
+pra-trofie-pesto;;;;;;Pesto alla genovese (vasetto);25;500;5;5;51;;;;
+pra-trofie-pesto;;;;;;Petto di pollo;130;100;23,3;0;0,8;;;;
+pra-trofie-pesto;;;;;;Fagiolini;100;25;1,9;4;0,2;;;;
+pra-trofie-pesto;;;;;;Patate;60;77;2;17;0,1;;;;
+pra-trofie-pesto;;;;;;Parmigiano Reggiano;5;392;33;0;28;;;;
+pra-carbonara-speck;Carbonara fit con speck;Pranzi;1;5;12;Pasta di semola;100;355;12,5;71;1,5;"1. Cuoci la pasta in acqua salata.
+2. Rosola lo speck a listarelle in padella senza olio finché è croccante.
+3. In una ciotola sbatti uovo, albume, parmigiano e tanto pepe.
+4. Scola la pasta, versala nella padella a fuoco spento con lo speck, aggiungi le uova e un po' d'acqua di cottura e mescola veloce fino a una crema.";Fuoco spento quando metti le uova, così non diventa una frittata.;;
+pra-carbonara-speck;;;;;;Uova intere;60;128;12,4;0;8,7;;;;
+pra-carbonara-speck;;;;;;Albume;60;43;10,7;0;0;;;;
+pra-carbonara-speck;;;;;;Speck;40;303;28,3;0,5;20,9;;;;
+pra-carbonara-speck;;;;;;Parmigiano Reggiano;15;392;33;0;28;;;;
+pra-ricotta-cotto;Pasta cremosa ricotta, prosciutto e piselli;Pranzi;1;5;12;Pasta di semola;100;355;12,5;71;1,5;"1. Cuoci la pasta e, a metà cottura, aggiungi i piselli nella stessa pentola.
+2. Intanto rosola il prosciutto a cubetti in padella.
+3. In una ciotola lavora la ricotta con 3-4 cucchiai di acqua di cottura fino a renderla cremosa.
+4. Scola pasta e piselli, unisci prosciutto, crema di ricotta e parmigiano.";"Il gusto di ""panna e prosciutto"" con metà dei grassi.";;
+pra-ricotta-cotto;;;;;;Ricotta vaccina;60;146;8,8;3,5;10,9;;;;
+pra-ricotta-cotto;;;;;;Prosciutto cotto sgrassato;60;130;20;1;5;;;;
+pra-ricotta-cotto;;;;;;Piselli surgelati;80;72;5,5;10;0,4;;;;
+pra-ricotta-cotto;;;;;;Parmigiano Reggiano;10;392;33;0;28;;;;
+pra-basmati-curry;Riso basmati con pollo al curry e piselli;Pranzi;1;10;15;Riso basmati;90;350;7,5;78;0,6;"1. Cuoci il riso basmati in acqua salata (circa 10-12 minuti) e scolalo.
+2. In padella soffriggi la cipolla con l'olio, aggiungi il pollo a cubetti e i piselli.
+3. Aggiungi un cucchiaino di curry e un po' d'acqua e cuoci 8 minuti.
+4. A fuoco spento unisci lo yogurt greco per fare la cremina e servi sul riso.";Curry e spezie non contano nei valori.;;
+pra-basmati-curry;;;;;;Petto di pollo;150;100;23,3;0;0,8;;;;
+pra-basmati-curry;;;;;;Piselli surgelati;100;72;5,5;10;0,4;;;;
+pra-basmati-curry;;;;;;Yogurt greco 0%;80;57;10;4;0,2;;;;
+pra-basmati-curry;;;;;;Cipolla;30;40;1,1;9,3;0,1;;;;
+pra-basmati-curry;;;;;;Olio extravergine d'oliva;5;884;0;0;100;;;;
+pra-ragu-tacchino;Pasta al ragù di tacchino;Pranzi;2;10;30;Pasta di semola;200;355;12,5;71;1,5;"1. Soffriggi la cipolla tritata con l'olio.
+2. Aggiungi il macinato di tacchino e fallo rosolare sgranandolo bene.
+3. Versa la passata, sala e cuoci a fuoco basso 25 minuti.
+4. Cuoci la pasta, condisci con il ragù e il parmigiano.";L'alternativa fatta in casa ai sughi pronti: il doppio delle proteine. Il ragù si conserva in frigo 3 giorni.;;
+pra-ragu-tacchino;;;;;;Fesa di tacchino macinata;250;107;24;0;1,2;;;;
+pra-ragu-tacchino;;;;;;Passata di pomodoro;300;26;1,3;4,5;0,2;;;;
+pra-ragu-tacchino;;;;;;Cipolla;50;40;1,1;9,3;0,1;;;;
+pra-ragu-tacchino;;;;;;Olio extravergine d'oliva;10;884;0;0;100;;;;
+pra-ragu-tacchino;;;;;;Parmigiano Reggiano;20;392;33;0;28;;;;
+cen-hamburger;Hamburger fatto in casa con patatine croccanti;Cene;1;10;25;Macinato di manzo magro (5% grassi);150;137;21,4;0;5;"1. Taglia le patate a bastoncini, asciugale bene, condiscile con l'olio e il sale e cuocile in friggitrice ad aria a 200 °C per 18-20 minuti, scuotendo a metà (o in forno 25 minuti).
+2. Forma l'hamburger con il macinato e un pizzico di sale.
+3. Cuocilo su piastra ben calda, 3-4 minuti per lato; nell'ultimo minuto mettici sopra la mozzarella.
+4. Scalda il pane e componi con insalata, pomodoro e un velo di ketchup.";"Il tuo hamburger della settimana, con patatine ""fritte"" ad aria: un terzo dell'olio delle patatine fritte vere.";;
+cen-hamburger;;;;;;Pane per hamburger;80;270;9;48;4;;;;
+cen-hamburger;;;;;;Mozzarella light;30;160;20;1;8;;;;
+cen-hamburger;;;;;;Insalata;20;15;1,4;2,2;0,2;;;;
+cen-hamburger;;;;;;Pomodoro;40;18;0,9;3,9;0,2;;;;
+cen-hamburger;;;;;;Ketchup;10;102;1,2;23;0,1;;;;
+cen-hamburger;;;;;;Patate;200;77;2;17;0,1;;;;
+cen-hamburger;;;;;;Olio extravergine d'oliva;8;884;0;0;100;;;;
+cen-pizza-padella;Pizza proteica in padella;Cene;1;10;15;Farina 00;100;340;11;72;1;"1. Impasta farina, yogurt greco, lievito e un pizzico di sale finché è liscio (se serve un cucchiaio d'acqua).
+2. Stendilo sottile e cuocilo in padella antiaderente con l'olio, coperto, 4-5 minuti.
+3. Gira la base, aggiungi passata, mozzarella e prosciutto.
+4. Copri e cuoci altri 6-8 minuti a fuoco medio-basso finché la mozzarella fila.";Pronta senza lievitazione. Va bene anche come montanara: friggi la base in poco olio e condisci dopo.;;
+cen-pizza-padella;;;;;;Yogurt greco 0%;100;57;10;4;0,2;;;;
+cen-pizza-padella;;;;;;Lievito per dolci;4;100;0;25;0;;;;
+cen-pizza-padella;;;;;;Passata di pomodoro;70;26;1,3;4,5;0,2;;;;
+cen-pizza-padella;;;;;;Mozzarella light;100;160;20;1;8;;;;
+cen-pizza-padella;;;;;;Prosciutto cotto sgrassato;50;130;20;1;5;;;;
+cen-pizza-padella;;;;;;Olio extravergine d'oliva;5;884;0;0;100;;;;
+cen-risotto-speck;Risotto speck e piselli;Cene;2;10;20;Riso Carnaroli;160;350;7;79;0,6;"1. Prepara 1 litro di brodo vegetale caldo.
+2. Soffriggi la cipolla con l'olio e metà dello speck a listarelle.
+3. Tosta il riso 2 minuti, poi aggiungi brodo un mestolo alla volta.
+4. A metà cottura unisci i piselli; dopo circa 17 minuti spegni e manteca con parmigiano e lo speck rimasto.";Piatto trentino: meno proteine degli altri, abbinalo a un secondo leggero o a uno yogurt greco.;;
+cen-risotto-speck;;;;;;Speck;70;303;28,3;0,5;20,9;;;;
+cen-risotto-speck;;;;;;Piselli surgelati;150;72;5,5;10;0,4;;;;
+cen-risotto-speck;;;;;;Cipolla;40;40;1,1;9,3;0,1;;;;
+cen-risotto-speck;;;;;;Parmigiano Reggiano;30;392;33;0;28;;;;
+cen-risotto-speck;;;;;;Olio extravergine d'oliva;10;884;0;0;100;;;;
+cen-polenta-tacchino;Polenta con straccetti di tacchino e spinaci;Cene;1;10;15;Farina di mais per polenta;70;362;8,7;78;2,7;"1. Prepara la polenta istantanea con 300 ml di acqua salata (5-8 minuti).
+2. Taglia la fesa a straccetti e rosolala in padella con metà olio, 5 minuti.
+3. Nella stessa padella salta gli spinaci con l'olio rimasto e un pizzico di sale.
+4. Servi polenta, straccetti e spinaci con il parmigiano sopra.";Se hai la polenta avanzata, tagliala a fette e scaldala sulla piastra.;;
+cen-polenta-tacchino;;;;;;Fesa di tacchino;150;107;24;0;1,2;;;;
+cen-polenta-tacchino;;;;;;Spinaci;200;23;2,9;3,6;0,4;;;;
+cen-polenta-tacchino;;;;;;Olio extravergine d'oliva;10;884;0;0;100;;;;
+cen-polenta-tacchino;;;;;;Parmigiano Reggiano;10;392;33;0;28;;;;
+cen-canederli;Canederli allo speck in brodo;Cene;2;20;15;Pane comune raffermo;150;265;9;49;3,2;"1. Taglia il pane a cubetti e bagnalo con il latte.
+2. Aggiungi speck a dadini, cipolla tritata e appassita in padella, uova, parmigiano, farina, prezzemolo e un pizzico di sale.
+3. Impasta e lascia riposare 15 minuti, poi forma 6 canederli con le mani bagnate.
+4. Cuocili nel brodo che bolle piano per 15 minuti e servili con il brodo.";Il brodo non conta nei valori. Si possono anche congelare crudi.;;
+cen-canederli;;;;;;Speck;60;303;28,3;0,5;20,9;;;;
+cen-canederli;;;;;;Uova intere;120;128;12,4;0;8,7;;;;
+cen-canederli;;;;;;Latte parzialmente scremato;100;46;3,5;5;1,6;;;;
+cen-canederli;;;;;;Parmigiano Reggiano;30;392;33;0;28;;;;
+cen-canederli;;;;;;Farina 00;20;340;11;72;1;;;;
+cen-canederli;;;;;;Cipolla;30;40;1,1;9,3;0,1;;;;
+cen-cotoletta-forno;Cotoletta di pollo al forno con patate;Cene;1;10;20;Petto di pollo;180;100;23,3;0;0,8;"1. Batti il petto di pollo per renderlo sottile.
+2. Passalo nell'uovo sbattuto e poi nel pangrattato.
+3. Cuoci in forno a 200 °C o in friggitrice ad aria per 15-18 minuti, con un filo d'olio spruzzato sopra, insieme alle patate a cubetti.
+4. Servi con l'insalata.";Croccante come fritta, con un quarto dell'olio.;;
+cen-cotoletta-forno;;;;;;Uova intere;30;128;12,4;0;8,7;;;;
+cen-cotoletta-forno;;;;;;Pangrattato;30;395;13;72;5;;;;
+cen-cotoletta-forno;;;;;;Olio extravergine d'oliva;5;884;0;0;100;;;;
+cen-cotoletta-forno;;;;;;Patate;200;77;2;17;0,1;;;;
+cen-cotoletta-forno;;;;;;Insalata;80;15;1,4;2,2;0,2;;;;
+spu-yogurt-cornflakes;Yogurt greco, cacao e corn flakes;Spuntini proteici;1;2;0;Yogurt greco 0%;200;57;10;4;0,2;"1. Mescola lo yogurt con cacao e miele.
+2. Aggiungi i corn flakes all'ultimo.";Sa di budino al cioccolato croccante.;;
+spu-yogurt-cornflakes;;;;;;Cacao amaro in polvere;5;355;20,4;11,5;25,6;;;;
+spu-yogurt-cornflakes;;;;;;Corn flakes;20;378;7;84;0,9;;;;
+spu-yogurt-cornflakes;;;;;;Miele;10;304;0,3;82;0;;;;
+spu-toast;Toast prosciutto e mozzarella;Spuntini proteici;1;2;4;Pane in cassetta integrale;50;250;9,5;41;4;"1. Farcisci le 2 fette di pane con prosciutto e mozzarella a fettine.
+2. Tosta nel tostapane o in padella, 2 minuti per lato.";;;
+spu-toast;;;;;;Prosciutto cotto sgrassato;50;130;20;1;5;;;;
+spu-toast;;;;;;Mozzarella light;40;160;20;1;8;;;;
+spu-bresaola;Bresaola, grana e fette biscottate;Spuntini proteici;1;2;0;Bresaola;60;151;32;0,4;2;"1. Metti nel piatto bresaola, scaglie di parmigiano e 2-3 fette biscottate.
+2. Se vuoi, un filo di limone sulla bresaola.";Zero cottura, perfetto anche in ufficio.;;
+spu-bresaola;;;;;;Parmigiano Reggiano;20;392;33;0;28;;;;
+spu-bresaola;;;;;;Fette biscottate integrali;20;400;13;68;6,5;;;;
+spu-frullato;Frullato banana e burro d'arachidi;Spuntini proteici;1;3;0;Yogurt greco 0%;170;57;10;4;0,2;"1. Metti tutto nel frullatore.
+2. Frulla 30-40 secondi; aggiungi ghiaccio se lo vuoi fresco.";Ottimo dopo l'allenamento.;;
+spu-frullato;;;;;;Banana (sbucciata);100;89;1,1;23;0,3;;;;
+spu-frullato;;;;;;Burro d'arachidi 100%;15;600;25;12;49;;;;
+spu-frullato;;;;;;Bevanda d'avena;150;46;1;6,6;1,5;;;;
+spu-frullato;;;;;;Fiocchi d'avena;20;372;13,5;60;7;;;;
+lav-piadina-pollo;Piadina pollo, mozzarella e insalata;Da portare al lavoro;1;5;8;Piadina classica;100;310;8,3;49;9;"1. Cuoci il pollo a fettine sulla piastra con un filo d'olio, sale e pepe.
+2. Scalda la piadina in padella 1 minuto per lato.
+3. Farcisci con pollo, mozzarella, insalata e pomodoro, piega e avvolgi nella carta stagnola.";Buona anche fredda: tieni il pomodoro a parte se la mangi dopo molte ore.;;
+lav-piadina-pollo;;;;;;Petto di pollo;140;100;23,3;0;0,8;;;;
+lav-piadina-pollo;;;;;;Mozzarella light;40;160;20;1;8;;;;
+lav-piadina-pollo;;;;;;Insalata;30;15;1,4;2,2;0,2;;;;
+lav-piadina-pollo;;;;;;Pomodoro;50;18;0,9;3,9;0,2;;;;
+lav-piadina-pollo;;;;;;Olio extravergine d'oliva;3;884;0;0;100;;;;
+lav-insalata-riso;Insalata di riso basmati, tonno e piselli;Da portare al lavoro;1;10;12;Riso basmati;80;350;7,5;78;0,6;"1. Cuoci riso e piselli insieme in acqua salata per 10-12 minuti, scola e raffredda sotto l'acqua fredda.
+2. Aggiungi tonno sgocciolato, pomodorini a metà e prosciutto a cubetti.
+3. Condisci con olio, sale e pepe e metti nel contenitore.";Si mangia fredda, niente microonde. Si conserva in frigo 2 giorni.;;
+lav-insalata-riso;;;;;;Tonno al naturale sgocciolato;120;103;24;0;0,8;;;;
+lav-insalata-riso;;;;;;Piselli surgelati;80;72;5,5;10;0,4;;;;
+lav-insalata-riso;;;;;;Pomodorini;100;18;0,9;3,9;0,2;;;;
+lav-insalata-riso;;;;;;Prosciutto cotto sgrassato;40;130;20;1;5;;;;
+lav-insalata-riso;;;;;;Olio extravergine d'oliva;8;884;0;0;100;;;;
+lav-pasta-fredda;Pasta fredda pesto, pollo e pomodorini;Da portare al lavoro;1;10;12;Pasta di semola;90;355;12,5;71;1,5;"1. Cuoci la pasta, scolala e raffreddala con un filo d'acqua fredda.
+2. Cuoci il pollo a cubetti in padella e lascialo intiepidire.
+3. Unisci pesto, pollo, pomodorini a metà e mozzarella a cubetti.";Meglio preparata la sera prima: il pesto insaporisce tutto.;;
+lav-pasta-fredda;;;;;;Pesto alla genovese (vasetto);20;500;5;5;51;;;;
+lav-pasta-fredda;;;;;;Petto di pollo;130;100;23,3;0;0,8;;;;
+lav-pasta-fredda;;;;;;Pomodorini;100;18;0,9;3,9;0,2;;;;
+lav-pasta-fredda;;;;;;Mozzarella light;40;160;20;1;8;;;;
+lav-mealprep-tacchino;Riso, tacchino e fagiolini (meal prep x3);Da portare al lavoro;3;15;20;Riso basmati;240;350;7,5;78;0,6;"1. Cuoci il riso basmati e i fagiolini (in pentole separate o i fagiolini al vapore).
+2. Taglia la fesa a bocconcini e rosolala in padella con l'olio, 6-7 minuti.
+3. Sfuma con la salsa di soia e unisci i fagiolini.
+4. Dividi riso e tacchino in 3 contenitori: pranzo pronto per 3 giorni.";Si scalda al microonde 2 minuti, ma è buono anche tiepido.;;
+lav-mealprep-tacchino;;;;;;Fesa di tacchino;450;107;24;0;1,2;;;;
+lav-mealprep-tacchino;;;;;;Fagiolini;400;25;1,9;4;0,2;;;;
+lav-mealprep-tacchino;;;;;;Olio extravergine d'oliva;20;884;0;0;100;;;;
+lav-mealprep-tacchino;;;;;;Salsa di soia;30;53;8;4,9;0,6;;;;
+pra-pollo-satay;Riso basmati con pollo satay al burro d'arachidi;Pranzi;1;10;15;Riso basmati;80;350;7,5;78;0,6;"1. Cuoci il riso basmati e, in un'altra pentola, i fagiolini.
+2. Rosola il pollo a cubetti in padella antiaderente, 6-7 minuti.
+3. In una tazza sciogli il burro d'arachidi con la salsa di soia e 3-4 cucchiai di acqua calda (se ce l'hai, qualche goccia di limone).
+4. Versa la salsa sul pollo, fai insaporire 1 minuto e servi con riso e fagiolini.";Salsa satay: il burro d'arachidi diventa salato e cremoso. Economica e piena di proteine.;;
+pra-pollo-satay;;;;;;Petto di pollo;150;100;23,3;0;0,8;;;;
+pra-pollo-satay;;;;;;Burro d'arachidi 100%;20;600;25;12;49;;;;
+pra-pollo-satay;;;;;;Salsa di soia;15;53;8;4,9;0,6;;;;
+pra-pollo-satay;;;;;;Fagiolini;100;25;1,9;4;0,2;;;;
+pra-pasta-tonno;Pasta tonno e pomodoro;Pranzi;1;5;12;Pasta di semola;100;355;12,5;71;1,5;"1. Soffriggi la cipolla con l'olio, aggiungi la passata e cuoci 8 minuti.
+2. Spegni e aggiungi il tonno sgocciolato (a fuoco spento resta morbido).
+3. Cuoci la pasta, scolala e condiscila con il sugo.";Il classico da dispensa: costa pochissimo e si fa in 15 minuti.;;
+pra-pasta-tonno;;;;;;Tonno al naturale sgocciolato;80;103;24;0;0,8;;;;
+pra-pasta-tonno;;;;;;Passata di pomodoro;150;26;1,3;4,5;0,2;;;;
+pra-pasta-tonno;;;;;;Cipolla;20;40;1,1;9,3;0,1;;;;
+pra-pasta-tonno;;;;;;Olio extravergine d'oliva;5;884;0;0;100;;;;
+cen-frittata-forno;Frittata al forno con patate e prosciutto;Cene;2;10;25;Uova intere;240;128;12,4;0;8,7;"1. Taglia le patate a cubetti piccoli e cuocile in padella con l'olio, coperte, 10 minuti.
+2. Sbatti 4 uova con l'albume, il grana, sale e pepe; aggiungi il prosciutto a cubetti.
+3. Metti le patate in una teglia con carta forno e versa sopra le uova.
+4. Forno a 180 °C per 20-25 minuti (o friggitrice ad aria 160 °C per 15).";Buona anche fredda il giorno dopo: perfetta da portare al lavoro.;;
+cen-frittata-forno;;;;;;Albume;100;43;10,7;0;0;;;;
+cen-frittata-forno;;;;;;Patate;300;77;2;17;0,1;;;;
+cen-frittata-forno;;;;;;Prosciutto cotto sgrassato;80;130;20;1;5;;;;
+cen-frittata-forno;;;;;;Parmigiano Reggiano;20;392;33;0;28;;;;
+cen-frittata-forno;;;;;;Olio extravergine d'oliva;8;884;0;0;100;;;;
+cen-polpette-pollo;Polpette di pollo al forno con patate;Cene;2;15;25;Petto di pollo;400;100;23,3;0;0,8;"1. Trita il petto di pollo nel mixer (o compra il macinato di pollo).
+2. Impasta con uovo, pangrattato, grana, sale e pepe e forma 12-14 polpette.
+3. Mettile in teglia con le patate a spicchi e l'olio.
+4. Forno a 200 °C per 25 minuti, girando a metà (friggitrice ad aria 180 °C per 15-18 minuti).";Si congelano crude: ne fai una doppia dose e sei a posto per due settimane.;;
+cen-polpette-pollo;;;;;;Uova intere;60;128;12,4;0;8,7;;;;
+cen-polpette-pollo;;;;;;Pangrattato;40;395;13;72;5;;;;
+cen-polpette-pollo;;;;;;Parmigiano Reggiano;20;392;33;0;28;;;;
+cen-polpette-pollo;;;;;;Patate;300;77;2;17;0,1;;;;
+cen-polpette-pollo;;;;;;Olio extravergine d'oliva;10;884;0;0;100;;;;
+lav-piadina-tonno;Piadina tonno e ricotta;Da portare al lavoro;1;5;2;Piadina classica;100;310;8,3;49;9;"1. Schiaccia il tonno con la ricotta, sale e pepe fino a una crema.
+2. Scalda la piadina 1 minuto per lato.
+3. Spalma la crema, aggiungi insalata e pomodoro e arrotola.";Zero cottura per il ripieno. Tieni il pomodoro a parte se la mangi dopo molte ore.;;
+lav-piadina-tonno;;;;;;Tonno al naturale sgocciolato;80;103;24;0;0,8;;;;
+lav-piadina-tonno;;;;;;Ricotta vaccina;50;146;8,8;3,5;10,9;;;;
+lav-piadina-tonno;;;;;;Insalata;30;15;1,4;2,2;0,2;;;;
+lav-piadina-tonno;;;;;;Pomodoro;50;18;0,9;3,9;0,2;;;;
+col-toast-uovo;Toast uovo e prosciutto;Colazioni veloci;1;3;5;Pane in cassetta integrale;50;250;9,5;41;4;"1. Strapazza uovo e albume in padella antiaderente con un pizzico di sale, 2 minuti.
+2. Tosta le due fette di pane.
+3. Farcisci con l'uovo e il prosciutto.";Colazione salata per chi la mattina non ha voglia di dolce.;;
+col-toast-uovo;;;;;;Uova intere;60;128;12,4;0;8,7;;;;
+col-toast-uovo;;;;;;Albume;60;43;10,7;0;0;;;;
+col-toast-uovo;;;;;;Prosciutto cotto sgrassato;30;130;20;1;5;;;;
+col-fette-arachidi-salato;Fette biscottate con burro d'arachidi e prosciutto;Colazioni veloci;1;3;0;Fette biscottate integrali;30;400;13;68;6,5;"1. Spalma un velo di burro d'arachidi sulle fette biscottate.
+2. Mangiale accompagnate dal prosciutto cotto (o appoggialo sopra: dolce-salato, provalo!).";Il burro d'arachidi 100% è senza zucchero: va benissimo anche col salato.;;
+col-fette-arachidi-salato;;;;;;Burro d'arachidi 100%;20;600;25;12;49;;;;
+col-fette-arachidi-salato;;;;;;Prosciutto cotto sgrassato;60;130;20;1;5;;;;
+spu-rotolini-cotto;Rotolini di cotto e ricotta con grissini;Spuntini proteici;1;4;0;Prosciutto cotto sgrassato;60;130;20;1;5;"1. Condisci la ricotta con sale, pepe ed erba cipollina se ce l'hai.
+2. Spalmala sulle fette di prosciutto e arrotolale.
+3. Accompagna con 3-4 grissini.";Salato, veloce e costa poco.;;
+spu-rotolini-cotto;;;;;;Ricotta vaccina;60;146;8,8;3,5;10,9;;;;
+spu-rotolini-cotto;;;;;;Grissini;15;415;12;70;9;;;;
+spu-pizzette;Pizzette proteiche in friggitrice ad aria;Spuntini proteici;1;8;8;Farina 00;50;340;11;72;1;"1. Impasta farina, yogurt, lievito e un pizzico di sale.
+2. Stendi e ritaglia 6 dischetti con un bicchiere.
+3. Condisci con passata, sale, origano e mozzarella a cubetti.
+4. Friggitrice ad aria a 180 °C per 7-8 minuti (o forno a 220 °C per 10).";Per la voglia di salato: sembrano le pizzette del bar.;;
+spu-pizzette;;;;;;Yogurt greco 0%;50;57;10;4;0,2;;;;
+spu-pizzette;;;;;;Lievito per dolci;2;100;0;25;0;;;;
+spu-pizzette;;;;;;Passata di pomodoro;40;26;1,3;4,5;0,2;;;;
+spu-pizzette;;;;;;Mozzarella light;50;160;20;1;8;;;;
+spu-uova-grissini;Uova sode e grissini;Spuntini proteici;1;2;9;Uova intere;120;128;12,4;0;8,7;"1. Metti le uova in acqua fredda, porta a bollore e cuoci 9 minuti.
+2. Raffreddale sotto l'acqua fredda e sgusciale.
+3. Sale, pepe e grissini a parte.";Prepara 6 uova sode la domenica: in frigo durano 4-5 giorni.;;
+spu-uova-grissini;;;;;;Grissini;20;415;12;70;9;;;;
+spu-patatine;Patatine croccanti in friggitrice ad aria;Spuntini proteici;1;5;20;Patate;250;77;2;17;0,1;"1. Taglia le patate a bastoncini e lasciale 10 minuti in acqua fredda.
+2. Asciugale benissimo, condiscile con olio e sale.
+3. Friggitrice ad aria a 200 °C per 18-20 minuti, scuotendo 2 volte.";Non è uno spuntino proteico: è lo sgarro salato furbo, circa un terzo delle calorie delle patatine fritte vere.;;
+spu-patatine;;;;;;Olio extravergine d'oliva;8;884;0;0;100;;;;
+spu-popcorn;Popcorn salati fatti in casa;Spuntini proteici;1;1;4;Mais per popcorn;30;375;12;74;4,3;"1. Scalda l'olio in una pentola con coperchio e metti il mais.
+2. Quando inizia a scoppiare scuoti la pentola ogni tanto, sempre col coperchio.
+3. Appena smette di scoppiare togli dal fuoco e sala.";Una ciotola grande per circa 150 kcal: da film sul divano invece delle patatine in busta.;;
+spu-popcorn;;;;;;Olio extravergine d'oliva;5;884;0;0;100;;;;
