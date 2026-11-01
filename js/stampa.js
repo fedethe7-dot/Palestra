@@ -1,22 +1,23 @@
-'use strict';
 /* ============ STAMPA RESOCONTI ============
-   Prepara una pagina bianca pulita e apre la stampa del telefono/PC
-   (da lì si può anche "Salva come PDF"). */
+   Prepara una pagina bianca pulita e apre la stampa (da lì si può anche "Salva come PDF"). */
+import { S, sorted, inPeriod, wVolume, exVolume, exMaxKg, exReps, records } from './dati.js';
+import { $, esc, fmt, toast, parseISO, daysBetween } from './util.js';
 
 const fmtFull = s => parseISO(s).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const setTxt = e => e.sets.map(s => e.tipo === 'carico' ? `${fmt(s.kg, 2)}×${s.reps}` : `${s.reps}${e.tipo === 'tempo' ? '″' : ''}`).join('  ');
+const PER = { 7: 'ultimi 7 giorni', 30: 'ultimi 30 giorni', 90: 'ultimi 3 mesi', 180: 'ultimi 6 mesi', 365: 'ultimo anno', 0: 'tutto lo storico' };
 
 function stampa(titolo, sotto, corpo) {
   let el = $('#print');
   if (!el) { el = document.createElement('div'); el.id = 'print'; document.body.appendChild(el); }
-  el.innerHTML = `<div class="p-head"><div><h1>${titolo}</h1><p>${sotto}</p></div><div class="p-logo">🏋️ Palestra</div></div>${corpo}
-    <div class="p-foot">Stampato il ${new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}${db.settings.name ? ` • ${esc(db.settings.name)}` : ''}</div>`;
+  el.innerHTML = `<div class="p-head"><div><h1>${titolo}</h1><p>${sotto}</p></div><div class="p-logo">Palestra</div></div>${corpo}
+    <div class="p-foot">Stampato il ${new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}${S.db.settings.name ? ` • ${esc(S.db.settings.name)}` : ''}</div>`;
   document.body.classList.add('printing');
-  setTimeout(() => { window.print(); }, 50);
+  setTimeout(() => { try { window.print(); } catch (e) { toast('Stampa non disponibile qui'); } }, 60);
 }
 window.addEventListener('afterprint', () => document.body.classList.remove('printing'));
 
-function stampaRiepilogo(days) {
+export function stampaRiepilogo(days) {
   const ws = inPeriod(days);
   if (!ws.length) return toast('Nessun allenamento nel periodo');
   const dal = ws[0].date, al = ws.at(-1).date;
@@ -40,7 +41,7 @@ function stampaRiepilogo(days) {
   const righeW = ws.map(w => `<tr><td>${fmtFull(w.date)}</td><td class="c">${esc(w.session)}</td>
     <td>${w.exercises.map(e => `<div><b>${esc(e.nome)}</b> ${setTxt(e)}</div>`).join('')}</td>
     <td class="c">${fmt(wVolume(w))}</td><td class="c">${w.kcal || '—'}</td></tr>`).join('');
-  const per = { 7: 'ultimi 7 giorni', 30: 'ultimi 30 giorni', 90: 'ultimi 3 mesi', 180: 'ultimi 6 mesi', 365: 'ultimo anno', 0: 'tutto lo storico' }[days] || '';
+  const per = PER[days] || '';
   stampa('Riepilogo allenamenti', `Dal ${fmtFull(dal)} al ${fmtFull(al)}${per ? ` • ${per}` : ''}`, `
     <div class="p-kpi"><div><b>${ws.length}</b>allenamenti</div><div><b>${fmt(ws.length / settimane, 1)}</b>a settimana</div>
       <div><b>${fmt(vol)}</b>kg di volume</div><div><b>${kc.length ? fmt(kcal) : '—'}</b>kcal</div></div>
@@ -50,7 +51,7 @@ function stampaRiepilogo(days) {
     <table><thead><tr><th>Data</th><th>Sess.</th><th>Serie (kg × ripetizioni)</th><th>Volume</th><th>Kcal</th></tr></thead><tbody>${righeW}</tbody></table>`);
 }
 
-function stampaStorico(nome) {
+export function stampaStorico(nome) {
   if (!nome) return toast('Scegli prima un esercizio');
   const voci = sorted().map(w => ({ w, e: w.exercises.find(x => x.nome === nome) })).filter(x => x.e);
   if (!voci.length) return toast('Nessun dato per questo esercizio');
@@ -65,19 +66,4 @@ function stampaStorico(nome) {
       ${carico ? `<div><b>${rec ? fmt(rec.kg, 2) + ' kg × ' + rec.reps : '—'}</b>record</div><div><b>${fmt(primo, 2)} → ${fmt(ultimo, 2)}</b>kg max inizio → oggi</div>
       <div><b>${ultimo - primo >= 0 ? '+' : ''}${fmt(ultimo - primo, 2)} kg</b>progresso</div>` : ''}</div>
     <table><thead><tr><th>Data</th><th>Sess.</th><th>Serie ${carico ? '(kg × ripetizioni)' : tipo === 'tempo' ? '(secondi)' : '(ripetizioni)'}</th><th>Massimo</th><th>${carico ? 'Volume kg' : 'Totale'}</th></tr></thead><tbody>${righe}</tbody></table>`);
-}
-
-function cardStampa(nomi) {
-  const per = PERIODI.find(p => p[0] === period)?.[1];
-  return `<div class="card"><h3>🖨️ Stampa resoconto</h3>
-    <button class="btn full" data-action="print-riepilogo" style="margin-bottom:10px">📋 Riepilogo del periodo (${per})</button>
-    ${nomi.length ? `<div class="row" style="gap:8px"><select id="print-ex">${nomi.map(n => `<option ${n === chartEx ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
-      <button class="btn" data-action="print-storico" style="white-space:nowrap">📈 Storico</button></div>` : ''}
-    <div class="muted" style="margin-top:8px">Si apre la stampa: puoi stampare o scegliere "Salva come PDF".</div></div>`;
-}
-
-function azioniStampa(a) {
-  if (a === 'print-riepilogo') { stampaRiepilogo(period); return true; }
-  if (a === 'print-storico') { stampaStorico($('#print-ex')?.value); return true; }
-  return false;
 }

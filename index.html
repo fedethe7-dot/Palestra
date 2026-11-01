@@ -1,41 +1,38 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" data-stile="vetro" data-modo="scuro">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b1120">
+  <meta name="theme-color" content="#060914">
+  <meta name="description" content="Il tuo personal trainer digitale: allenamenti, progressi e cucina fit">
   <title>Palestra</title>
   <link rel="manifest" href="manifest.json">
- <link rel="icon" href="icon-192.png" type="image/png">
+  <link rel="icon" href="icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=5.4.1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <script>
+    /* Applica subito stile e modo salvati, così non c'è il lampo di colori sbagliati all'apertura */
+    (function () {
+      try {
+        var k = /\/beta\/?/.test(location.pathname) ? 'palestra-dati-beta' : 'palestra-dati';
+        var s = (JSON.parse(localStorage.getItem(k) || 'null') || {}).settings || {};
+        var stile = s.stile || (s.accent ? (['aurora', 'natura'].indexOf(s.accent) >= 0 ? 'vetro' : 'essenziale') : 'vetro');
+        var modo = s.modo || ({ light: 'chiaro', dark: 'scuro' }[s.theme]) || 'auto';
+        var scuro = modo === 'scuro' || (modo === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.stile = stile;
+        document.documentElement.dataset.modo = scuro ? 'scuro' : 'chiaro';
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="css/temi.css?v=6.0.0">
+  <link rel="stylesheet" href="css/app.css?v=6.0.0">
 </head>
 <body>
-  <main id="app"></main>
-
-  <nav id="nav">
-    <button data-view="home" class="active"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
-    <button data-view="allena"><svg viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg>Allena</button>
-    <button data-view="ricette"><svg viewBox="0 0 24 24"><path d="M5 11h14a7 7 0 0 1-14 0zM12 3v3M8 4.5l1 2M16 4.5l-1 2M9 21h6"/></svg>Ricette</button>
-    <button data-view="progressi"><svg viewBox="0 0 24 24"><path d="M3 20h18M5 16l4-5 4 3 6-8"/><circle cx="19" cy="6" r="1.2"/></svg>Progressi</button>
-    <button data-view="corpo"><svg viewBox="0 0 24 24"><path d="M2.5 20H12c4.5 0 7.8-3 7.3-7.2L18.4 6c-.2-1.7-1.7-2.8-3.4-2.5l-2.2.4c-1.4.3-1.9 2-.9 3L14 9l.3 2.8c-2.5-2.3-6.7-2.2-9.1.6L2.5 15.2M7.8 15.4c1.4-1.1 3.4-1.2 4.8-.2"/></svg>Corpo</button>
-  </nav>
-
-  <div id="toast"></div>
-  <input type="file" id="file" accept=".json,.csv,text/csv,application/json" hidden>
-
-  <script src="visual.js?v=5.4.1"></script>
-  <script src="timer.js?v=5.4.1"></script>
-  <script src="ricette.js?v=5.4.1"></script>
-  <script src="stampa.js?v=5.4.1"></script>
-  <script src="app.js?v=5.4.1"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').then(r => r.update());
-      // quando arriva una versione nuova, ricarica una volta da sola
-      let ricaricata = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => { if (!ricaricata) { ricaricata = true; location.reload(); } });
-    }
-  </script>
+  <main id="app" aria-live="polite"></main>
+  <nav id="nav" aria-label="Navigazione principale"></nav>
+  <input type="file" id="file" hidden>
+  <noscript><p style="padding:20px">Per usare Palestra attiva JavaScript.</p></noscript>
+  <script type="module" src="js/app.js?v=6.0.0"></script>
 </body>
 </html>
