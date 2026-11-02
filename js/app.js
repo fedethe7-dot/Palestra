@@ -114,7 +114,7 @@ applicaTema();
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 window.addEventListener('online', aggiornaTutto);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') aggiornaTutto(); });
-const iniziale = S.db.draft ? 'allena' : (location.hash.slice(1) in VISTE && !['allena', 'ricetta', 'esercizio'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'oggi');
+const iniziale = (location.hash.slice(1) in VISTE && !['allena', 'ricetta', 'esercizio'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'oggi');
 history.replaceState({ v: iniziale }, '', '#' + iniziale);
 S.view = iniziale; render();
 if (location.hash === '#allenati' || /[?&]azione=allenati/.test(location.search)) setTimeout(() => AZIONI.allenati(), 300);

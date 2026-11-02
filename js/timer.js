@@ -189,7 +189,12 @@ function drawWork() {
   box.classList.toggle('counting', w.state === 'count');
   if (ring) ring.style.strokeDashoffset = 100 - clamp(f, 0, 1) * 100;
 }
+function drawAvanti() {
+  const el = document.querySelector('[data-avanti]'), a = S.db.draft?.avantiAt; if (!el || !a) return;
+  el.textContent = `· tra ${Math.max(0, Math.ceil((a - Date.now()) / 1000))} s`;
+}
 function drawElapsed() {
+  drawAvanti();
   const els = document.querySelectorAll('[data-elapsed]'); if (!els.length || !S.db.draft?.startedAt) return;
   if (riallineaTempo(S.db.draft)) save();
   const m = Math.floor((Date.now() - S.db.draft.startedAt) / 60000);

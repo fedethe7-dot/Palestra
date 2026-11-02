@@ -208,8 +208,21 @@ body.in-allenamento #nav { display: none; }
 .coach-tip.stallo { --coach-bg: color-mix(in srgb, #f5a623 14%, transparent); --coach-line: color-mix(in srgb, #f5a623 40%, transparent); --coach-ico: #f5a623; }
 .serie { background: var(--surface); border: var(--card-border, 1px solid var(--line)); border-radius: var(--r); padding: 4px; box-shadow: var(--shadow); backdrop-filter: var(--blur); }
 .s-riga { display: grid; grid-template-columns: 40px minmax(0, 1.4fr) minmax(0, .9fr) 34px 46px; gap: 4px; align-items: center; min-height: 48px; padding: 0 4px; border-radius: calc(var(--r) - 6px); font-variant-numeric: tabular-nums; }
-.serie.con-kg .s-riga { grid-template-columns: 40px minmax(0, 1.25fr) minmax(0, .8fr) minmax(0, .7fr) 34px 46px; }
-.s-testa > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.serie.con-kg .s-riga { grid-template-columns: 34px minmax(0, 1fr) 68px 50px 42px 44px; }
+.serie:not(.con-kg) .s-riga { grid-template-columns: 34px minmax(0, 1fr) 64px 42px 44px; }
+.s-prec { font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s-in { width: 100%; min-width: 0; height: 40px; padding: 0 2px !important; text-align: center; border-radius: 10px; border: 1px solid var(--line-strong) !important; background: var(--surface2) !important; color: var(--text);
+  font-family: var(--font-num); font-weight: 800; font-variant-numeric: tabular-nums; font-size: min(1.05rem, calc(60px / (var(--ch, 2) * .72))) !important; }
+.s-in::placeholder { color: var(--muted); font-weight: 600; opacity: .8; }
+.s-in:focus { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 2px var(--accent-soft); }
+.s-riga.fatta .s-in { background: transparent !important; border-color: transparent !important; }
+.s-riga.todo .s-in { color: var(--muted); }
+.s-aiuto { margin: 0; text-align: center; }
+#dischi-box:empty { display: none; }
+#dischi-box .dischi { padding: 10px 12px; border-radius: var(--r-s); background: var(--surface); border: 1px solid var(--line); }
+.dock small[data-avanti] { font-weight: 600; opacity: .85; }
+.s-testa > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; letter-spacing: .04em; }
+.s-testa > span:nth-child(2) { text-align: left; }
 .s-testa { min-height: 30px; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .s-sel { width: 34px; height: 34px; border-radius: var(--r-s); border: 0; background: var(--track); font-weight: 800; font-family: var(--font-num); }
 .s-prec { font-size: .82rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -510,3 +523,7 @@ body.in-allenamento #rest { display: none; }
 .cb-mirino { position: absolute; left: 12%; right: 12%; top: 38%; height: 24%; border: 2px solid var(--accent); border-radius: 10px; box-shadow: 0 0 0 999px rgba(0,0,0,.35); pointer-events: none; }
 .cb-prod { display: flex; flex-direction: column; gap: 2px; } .cb-prod b { font-size: 1.1rem; } .cb-prod small { color: var(--muted); }
 .cb-stato { padding: 8px 10px; border-radius: var(--r-s); background: var(--surface2); }
+@media (max-width: 350px) {
+  .serie.con-kg .s-riga { grid-template-columns: 28px minmax(0, 1fr) 58px 42px 36px 38px; gap: 3px; padding: 0 2px; }
+  .s-prec { font-size: .7rem; letter-spacing: -.02em; } .s-ok { width: 36px; } .s-sel { width: 28px !important; height: 28px !important; font-size: .85rem; }
+}

@@ -3,7 +3,7 @@
    recupero automatico, esercizi a tempo con conto 3-2-1, riepilogo finale. */
 import { S, save, cfg, records, lastFor, durataAuto, durataDraft, riallineaTempo, stimaKcal, bodyKg, nextSession } from '../dati.js';
 import { esc, fmt, num, todayISO, toast, chiedi, restSec, vibra, uid, secTxt, clamp, fmtDateLong } from '../util.js';
-import { ico, app, apriFoglio, chiudiFoglio, stepper, festa } from '../ui.js';
+import { ico, app, apriFoglio, chiudiFoglio, festa } from '../ui.js';
 import { obiettivo, passoKg, dischiBilanciere, dischiCarrucola, riscaldamento, eRecord, rangeDi } from '../coach.js';
 import { libDi, visualDi, fotoEs, attrezzoDi, alternative, mappaMuscoli, NOMI_MUSCOLI, libreria, GRUPPI } from '../libreria.js';
 import { startRest, stopRest, addRest, apriRestFull, chiudiRestFull, workStato, workDur, workStart, workPause, workResume, workReset, workStop, workSetDur, schermoAcceso, sbloccaAudio, beep } from '../timer.js';
@@ -46,37 +46,31 @@ function dischiInfo(e, kg) {
   }
   return '';
 }
+const chN = v => Math.max(2, String(v ?? '').length);
 function tabellaSerie(e, i) {
-  const last = lastFor(e.nome, S.db.draft.date), cur = setCorrente(e);
-  const unit = e.tipo === 'tempo' ? 'Secondi' : 'Rip';
-  const prec = j => { const s = last?.ex.sets[j]; if (!s) return '—'; return e.tipo === 'carico' ? `${kgTxt(s.kg)} × ${s.reps}` : `${s.reps}${e.tipo === 'tempo' ? '″' : ''}`; };
-  return `<div class="serie ${e.tipo === 'carico' ? 'con-kg' : ''}" role="table" aria-label="Serie">
-    <div class="s-riga s-testa" role="row"><span>Serie</span><span>Ultima</span>${e.tipo === 'carico' ? '<span>Kg</span>' : ''}<span>${unit}</span><span>RIR</span><span class="sr-only">Fatta</span></div>
+  const last = lastFor(e.nome, S.db.draft.date), cur = setCorrente(e), carico = e.tipo === 'carico';
+  const unit = e.tipo === 'tempo' ? 'Sec' : 'Rip';
+  const prec = j => { const s = last?.ex.sets[j]; if (!s) return '—'; return carico ? `${kgTxt(s.kg)}×${s.reps}` : `${s.reps}${e.tipo === 'tempo' ? '″' : ''}`; };
+  return `<div class="serie ${carico ? 'con-kg' : ''}" role="table" aria-label="Serie">
+    <div class="s-riga s-testa" role="row"><span aria-label="Serie">N°</span><span>Ultima</span>${carico ? '<span>Kg</span>' : ''}<span>${unit}</span><span>RIR</span><span class="sr-only">Fatta</span></div>
     ${e.sets.map((s, j) => {
-      const stato = s.done ? 'fatta' : j === cur ? 'cur' : 'todo';
-      const reps = s.reps !== '' ? s.reps : s.target !== '' && s.target != null ? s.target : '—';
+      const stato = s.done ? 'fatta' : j === cur ? 'cur' : 'todo', n = j + 1 - e.sets.slice(0, j).filter(x => x.warm).length;
+      const kgV = s.kg === '' || s.kg == null ? '' : String(s.kg).replace('.', ','), tgt = s.target !== '' && s.target != null ? s.target : '';
+      const campo = (k, val, ph, mode, lab) => `<input class="s-in" data-sv="${k}" data-ex="${i}" data-set="${j}" value="${esc(val)}" placeholder="${esc(ph)}" inputmode="${mode}" enterkeyhint="next" autocomplete="off" aria-label="${lab} serie ${n}" style="--ch:${chN(val || ph)}">`;
       return `<div class="s-riga ${stato} ${s.warm ? 'warm' : ''}" role="row">
-        <button class="s-sel" data-action="set-sel" data-ex="${i}" data-set="${j}" aria-label="Serie ${j + 1}">${s.warm ? 'R' : j + 1 - e.sets.slice(0, j).filter(x => x.warm).length}</button>
-        <span class="s-prec">${s.warm ? 'riscald.' : prec(j - e.sets.slice(0, j).filter(x => x.warm).length)}</span>
-        ${e.tipo === 'carico' ? `<span class="s-val">${kgTxt(s.kg)}</span>` : ''}
-        <span class="s-val ${s.reps === '' && !s.done ? 'tgt' : ''}">${reps}</span>
-        <span class="s-rir">${s.rir == null ? '' : s.rir >= 4 ? '4+' : s.rir}</span>
+        <button class="s-sel" data-action="set-sel" data-ex="${i}" data-set="${j}" aria-label="Serie ${n}">${s.warm ? 'R' : n}</button>
+        <span class="s-prec">${s.warm ? 'riscald.' : prec(n - 1)}</span>
+        ${carico ? campo('kg', kgV, '—', 'decimal', 'Kg') : ''}
+        ${campo('reps', s.reps, tgt, 'numeric', e.tipo === 'tempo' ? 'Secondi' : 'Ripetizioni')}
+        ${campo('rir', s.rir == null ? '' : s.rir, '–', 'numeric', 'RIR')}
         <button class="s-ok ${s.done ? 'on' : ''}" data-action="set-done" data-ex="${i}" data-set="${j}" aria-label="${s.done ? 'Annulla serie' : 'Segna serie fatta'}" aria-pressed="${s.done}">${ico('check', 18)}</button></div>`; }).join('')}
-  </div>`;
+  </div>
+  <p class="s-aiuto muted small">Tocca un numero per scriverlo. RIR = ripetizioni che avevi ancora (0-5).</p>`;
 }
 function editorSerie(e, i) {
-  const j = setCorrente(e); if (j < 0) return '';
-  const s = e.sets[j], passo = passoKg(e);
-  if (e.tipo === 'tempo') return pannelloTempo(e);
-  const repsVal = s.reps !== '' ? s.reps : (s.target ?? '');
-  return `<div class="editor" data-ex="${i}" data-set="${j}">
-    <div class="ed-steppers ${e.tipo === 'carico' ? '' : 'uno'}">
-      ${e.tipo === 'carico' ? stepper({ valore: s.kg === '' ? '' : fmt(num(s.kg), 2), azione: 'step', campo: 'kg', passo, unita: 'kg', label: 'Peso' }) : ''}
-      ${stepper({ valore: repsVal, azione: 'step', campo: 'reps', passo: 1, unita: 'ripetizioni', label: 'Ripetizioni' })}
-    </div>
-    <div class="rir" role="group" aria-label="Ripetizioni in riserva"><span class="rir-lab">RIR <small>ripetizioni che avevi ancora</small></span>
-      <div class="rir-btns">${[0, 1, 2, 3, 4].map(r => `<button class="${s.rir === r ? 'on' : ''}" data-action="rir" data-v="${r}" aria-pressed="${s.rir === r}">${r === 4 ? '4+' : r}</button>`).join('')}</div></div>
-    ${e.tipo === 'carico' ? dischiInfo(e, s.kg) : ''}</div>`;
+  if (e.tipo === 'tempo') return setCorrente(e) < 0 ? '' : pannelloTempo(e);
+  const j = setCorrente(e); if (j < 0 || e.tipo !== 'carico') return '';
+  return `<div id="dischi-box">${dischiInfo(e, e.sets[j].kg)}</div>`;
 }
 function pannelloTempo(e) {
   const w = workStato(), dur = workDur(e), st = w.state;
@@ -122,7 +116,7 @@ function dock(e, i, n) {
     const j = setCorrente(e);
     return `<div class="dock"><button class="btn primary huge full" data-action="set-fatta">${ico('check', 22)} Serie ${j + 1 - e.sets.slice(0, j).filter(x => x.warm).length} fatta</button></div>`;
   }
-  if (i + 1 < n) return `<div class="dock"><button class="btn primary huge full" data-action="wk-go" data-i="${i + 1}">Avanti: ${esc(d.exercises[i + 1].nome)} ${ico('avanti', 20)}</button></div>`;
+  if (i + 1 < n) return `<div class="dock"><button class="btn primary huge full" data-action="wk-go" data-i="${i + 1}">Avanti: ${esc(d.exercises[i + 1].nome)}${d.avantiAt && d.avantiDa === i ? ' <small data-avanti></small>' : ''} ${ico('avanti', 20)}</button></div>`;
   return `<div class="dock"><button class="btn primary huge full" data-action="wk-go" data-i="${n}">Concludi allenamento ${ico('check', 20)}</button></div>`;
 }
 
@@ -130,6 +124,7 @@ export function viewAllena() {
   const d = S.db.draft;
   if (!d) { app.go('oggi'); return ''; }
   if (riallineaTempo(d)) save();
+  controllaAvanti();
   const n = d.exercises.length, cur = clamp(d.cur || 0, 0, n);
   document.body.dataset.restInline = '1';
   const top = `<header class="wk-top"><button class="icon-btn" data-action="go" data-view="oggi" aria-label="Torna a Oggi (l'allenamento resta aperto)">${ico('giu')}</button>
@@ -214,7 +209,7 @@ function foglioAggiungi(filtro = '') {
 const cur = () => { const d = S.db.draft; return d ? d.exercises[d.cur] : null; };
 function segnaFatta(i, j) {
   const d = S.db.draft, e = d.exercises[i], s = e.sets[j];
-  if (s.done) { s.done = false; save(); stopRest(); app.render(); return; }
+  if (s.done) { s.done = false; d.avantiAt = null; d.avantiDa = null; clearTimeout(timerAvanti); save(); stopRest(); app.render(); return; }
   if (s.reps === '' && s.target !== '' && s.target != null) s.reps = String(s.target);
   if (s.reps === '' || num(s.reps) == null) { toast('Scrivi le ripetizioni fatte'); return; }
   if (e.tipo === 'carico' && (s.kg === '' || num(s.kg) == null)) { toast('Scrivi il peso usato'); return; }
@@ -231,7 +226,27 @@ function segnaFatta(i, j) {
     const prossima = rimaste ? `Prossima: serie ${setCorrente(e) + 1} · ${e.tipo === 'carico' ? kgTxt(e.sets[setCorrente(e)].kg) + ' kg' : ''}` : `Prossimo: ${d.exercises[i + 1].nome}`;
     startRest(s.warm ? 60 : restSec(e.recupero), prossima);
   }
+  if (!rimaste && i + 1 < d.exercises.length) avantiTra(i, 10);
   app.render();
+}
+/* Esercizio finito: dopo 10 secondi passa da solo a quello dopo */
+let timerAvanti = null;
+function avantiTra(i, sec) {
+  clearTimeout(timerAvanti);
+  const d = S.db.draft; d.avantiAt = Date.now() + sec * 1000; d.avantiDa = i; save();
+  timerAvanti = setTimeout(() => {
+    const x = S.db.draft; if (!x || x.avantiDa !== i || !x.avantiAt) return;
+    if (document.activeElement?.matches?.('input, textarea')) { timerAvanti = null; return avantiTra(i, 5); } // stai scrivendo: aspetto
+    x.avantiAt = null;
+    if ((x.cur || 0) === i && exFatto(x.exercises[i])) { x.cur = i + 1; save(); if (S.view === 'allena') { app.render(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }
+    else save();
+  }, sec * 1000);
+}
+export function controllaAvanti() {
+  const d = S.db.draft; if (!d?.avantiAt) return;
+  const resto = d.avantiAt - Date.now();
+  if (resto <= 0) { const i = d.avantiDa; d.avantiAt = null; if ((d.cur || 0) === i && exFatto(d.exercises[i])) d.cur = i + 1; save(); }
+  else if (!timerAvanti) avantiTra(d.avantiDa, Math.ceil(resto / 1000));
 }
 async function salvaAllenamento() {
   const d = S.db.draft;
@@ -285,7 +300,7 @@ export const azioni = {
   },
   'scegli-sessione': () => foglioSessioni(),
   allenati: () => { if (S.db.draft) app.go('allena'); else foglioSessioni(); },
-  'wk-go': el => { const d = S.db.draft; d.cur = clamp(+el.dataset.i, 0, d.exercises.length); d.work = d.work && d.work.ex === d.cur ? d.work : null; save(); chiudiFoglio(true); app.render(); window.scrollTo({ top: 0, behavior: 'smooth' }); },
+  'wk-go': el => { const d = S.db.draft; d.avantiAt = null; clearTimeout(timerAvanti); d.cur = clamp(+el.dataset.i, 0, d.exercises.length); d.work = d.work && d.work.ex === d.cur ? d.work : null; save(); chiudiFoglio(true); app.render(); window.scrollTo({ top: 0, behavior: 'smooth' }); },
   'wk-lista': () => foglioLista(),
   'set-sel': el => { const e = S.db.draft.exercises[+el.dataset.ex], j = +el.dataset.set; if (e.sets[j].done) return; e.sets.forEach(s => s.sel = false); e.sets[j].sel = true; save(); app.render(); },
   'set-done': el => segnaFatta(+el.dataset.ex, +el.dataset.set),
@@ -335,6 +350,19 @@ export const azioni = {
 /* Valori scritti a mano negli stepper e nel riepilogo */
 export function input(t) {
   const d = S.db.draft; if (!d) return false;
+  if (t.dataset.sv) {
+    const e = d.exercises[+t.dataset.ex], j = +t.dataset.set, x = e?.sets[j]; if (!x) return true;
+    const v = t.value.trim().replace(',', '.'); t.style.setProperty('--ch', Math.max(2, t.value.length));
+    if (t.dataset.sv === 'kg') {
+      x.kg = v;
+      // il peso vale anche per le serie dopo non ancora fatte
+      if (!x.done) for (let k = j + 1; k < e.sets.length; k++) if (!e.sets[k].done && !e.sets[k].warm) {
+        e.sets[k].kg = v; const el = document.querySelector(`[data-sv="kg"][data-ex="${t.dataset.ex}"][data-set="${k}"]`); if (el) { el.value = t.value; el.style.setProperty('--ch', Math.max(2, t.value.length)); } }
+      const box = document.getElementById('dischi-box'); if (box && setCorrente(e) >= 0) box.innerHTML = dischiInfo(e, e.sets[setCorrente(e)].kg);
+    } else if (t.dataset.sv === 'reps') x.reps = v;
+    else { const r = parseInt(v, 10); x.rir = isNaN(r) ? null : clamp(r, 0, 5); }
+    save(); return true;
+  }
   if (t.dataset.campoInput) {
     const e = d.exercises[d.cur], j = setCorrente(e); if (j < 0) return true;
     const v = t.value.replace(',', '.');
@@ -357,4 +385,9 @@ export function input(t) {
   return false;
 }
 /* Quando esco da un campo dello stepper ridisegno per aggiornare dischi e tabella */
+document.addEventListener('keydown', ev => {
+  const t = ev.target; if (ev.key !== 'Enter' || !t.dataset?.sv) return;
+  ev.preventDefault(); const tutti = [...document.querySelectorAll('.s-in')], k = tutti.indexOf(t);
+  if (tutti[k + 1]) tutti[k + 1].focus(); else t.blur();
+});
 export function change(t) { if (t.dataset.campoInput && S.db.draft) { app.render(); return true; } return false; }
