@@ -81,3 +81,9 @@ Per notifiche del recupero precise anche a schermo spento il passo successivo è
 - Il repository è pubblico: lo storico iniziale è cifrato e si apre solo con il codice personale.
 - **Fabbisogno automatico** (Impostazioni → Profilo → Livello di attività → Automatico): metabolismo × 1,2 + kcal dei passi dall'orologio
   + palestra + calcio e attività extra, media delle ultime 4 settimane. La spiegazione del calcolo è in Progressi → Corpo.
+
+## Collegamento con Cartella Salute
+Le due app stanno sullo stesso indirizzo: sullo stesso telefono (stesso browser) si parlano da sole tramite `ponte-peso.js`, identico nelle due app.
+- **Peso** nei due sensi, con grasso e muscoli; anche le **cancellazioni** (Progressi → Corpo → Pesate). Una pesata per giorno, vince la modifica più recente.
+- Una pesata cancellata non torna rileggendo il foglio Google.
+- Da Salute arrivano altezza ed età; a Salute va il riepilogo dell'attività (passi, kcal, allenamenti, fabbisogno).

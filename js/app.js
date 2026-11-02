@@ -15,6 +15,7 @@ import * as Cucina from './viste/cucina.js';
 import * as Imp from './viste/impostazioni.js';
 import * as Strumenti from './viste/strumenti.js';
 import * as Attivita from './viste/attivita.js';
+import { sincronizzaSalute } from './ponte-salute.js';
 import * as Cibo from './cibo.js';
 
 const VISTE = {
@@ -115,13 +116,14 @@ document.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.targ
 applicaTema();
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 window.addEventListener('online', aggiornaTutto);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') aggiornaTutto(); });
+document.addEventListener('visibilitychange', () => { sincronizzaSalute(); if (document.visibilityState === 'visible') aggiornaTutto(); });
 const iniziale = (location.hash.slice(1) in VISTE && !['allena', 'ricetta', 'esercizio'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'oggi');
 history.replaceState({ v: iniziale }, '', '#' + iniziale);
 S.view = iniziale; render();
 if (location.hash === '#allenati' || /[?&]azione=allenati/.test(location.search)) setTimeout(() => AZIONI.allenati(), 300);
 aggiornaTutto();
 Cucina.caricaRicetteBase();
+sincronizzaSalute();
 window.PALESTRA = { versione: VERSIONE, S };
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

@@ -9,6 +9,7 @@ import { seriePerGruppo } from '../coach.js';
 import { queue } from '../sync.js';
 import { stampaDimagrimento } from '../stampa.js';
 import { tabAttivita } from './attivita.js';
+import { sincronizzaSalute } from '../ponte-salute.js';
 import { fotoTutte, fotoSalva, fotoElimina, fotoUrl } from '../foto.js';
 
 const PERIODI_TXT = { 30: 'ultimo mese', 90: 'ultimi 3 mesi', 180: 'ultimi 6 mesi', 365: 'ultimo anno' };
@@ -69,6 +70,15 @@ function volume() {
 }
 
 /* ---------- Corpo ---------- */
+let pesateTutte = false;
+function listaPesate() {
+  const l = [...S.db.weights].sort((a, b) => b.date.localeCompare(a.date)), vis = pesateTutte ? l : l.slice(0, 5);
+  if (!l.length) return '';
+  return `<details class="pesate" ${pesateTutte ? 'open' : ''}><summary class="muted small">Pesate (${l.length}) · anche in Cartella Salute</summary>
+    ${vis.map(w => `<div class="pasto-riga"><span><b>${fmt(w.kg, 1)} kg</b><small>${fmtDateLong(w.date)}</small></span>
+      <button class="icon-btn small" data-action="del-peso" data-date="${esc(w.date)}" aria-label="Elimina la pesata">${ico('cestino', 16)}</button></div>`).join('')}
+    ${l.length > 5 ? `<button class="chip-btn" data-action="pesate-tutte">${pesateTutte ? 'Mostra meno' : `Mostra tutte (${l.length})`}</button>` : ''}</details>`;
+}
 /* Come è calcolato il fabbisogno quando il livello di attività è "Automatico" */
 function cardFabbisogno(r) {
   if (String(cfg().attivita) !== 'auto' || !r.bmr) return '';
@@ -97,7 +107,8 @@ function corpo() {
   return `<section class="card"><div class="row grande"><div><span class="eyebrow">Peso corporeo</span><b class="big-num">${r.kg ? fmt(r.kg, 1) : '—'}<small> kg</small></b></div>
       <button class="btn small primary" data-action="peso-veloce">${ico('piu', 16)} Pesata</button></div>
     ${lineChart(pts, { unita: 'kg', dec: 1, media: pts.length > 3 ? media : null, obiettivo: goal || null })}
-    <p class="muted small">${pts.length > 3 ? 'La linea tratteggiata è la media delle ultime 4 pesate: guarda quella, non il singolo giorno.' : 'Pesati al mattino, a digiuno.'}${goal && r.kg ? ` Mancano ${fmt(Math.abs(goal - r.kg), 1)} kg all'obiettivo.` : ''}</p></section>
+    <p class="muted small">${pts.length > 3 ? 'La linea tratteggiata è la media delle ultime 4 pesate: guarda quella, non il singolo giorno.' : 'Pesati al mattino, a digiuno.'}${goal && r.kg ? ` Mancano ${fmt(Math.abs(goal - r.kg), 1)} kg all'obiettivo.` : ''}</p>
+    ${listaPesate()}</section>
     <section class="tiles">
       <div class="tile"><span class="t-lab">BMI</span><b class="t-val">${r.bmi ? fmt(r.bmi, 1) : '—'}</b><span class="t-sub">${bmiTxt || 'serve l\'altezza'}</span></div>
       <div class="tile"><span class="t-lab">Grasso</span><b class="t-val">${r.fat != null ? fmt(r.fat, 1) + '%' : '—'}</b><span class="t-sub">${r.grassoKg ? fmt(r.grassoKg, 1) + ' kg' : 'dalla bilancia'}</span></div>
@@ -164,7 +175,8 @@ export const azioni = {
     const kg = num(document.getElementById('w-kg').value), date = document.getElementById('w-data').value;
     if (!kg || !date || kg < 30 || kg > 250) return toast('Scrivi un peso valido');
     S.db.weights = S.db.weights.filter(w => w.date !== date); S.db.weights.push({ id: uid(), date, kg });
-    save(); chiudiFoglio(); app.render(); toast('Peso salvato'); queue({ type: 'weight', date, kg });
+    if (S.db.pesiTolti) delete S.db.pesiTolti[date];
+    save(); chiudiFoglio(); app.render(); toast('Peso salvato'); queue({ type: 'weight', date, kg }); sincronizzaSalute({ avvisa: false });
   },
   fase: el => { cfg().fase = el.dataset.v; save(); app.render(); },
   'mis-bilancia': () => apriFoglio(`<div class="form"><label class="campo"><span>Data</span><input type="date" id="b-data" value="${todayISO()}"></label>
@@ -177,9 +189,18 @@ export const azioni = {
     if (fat != null && (fat < 3 || fat > 60)) return toast('La % di grasso sembra sbagliata');
     S.db.body = S.db.body.filter(m => m.date !== date); S.db.body.push({ id: uid(), date, kg, fat, muscle });
     if (!S.db.weights.some(w => w.date === date && w.kg === kg)) { S.db.weights = S.db.weights.filter(w => w.date !== date); S.db.weights.push({ id: uid(), date, kg }); queue({ type: 'weight', date, kg }); }
-    save(); chiudiFoglio(); app.render(); toast('Misurazione salvata');
+    if (S.db.pesiTolti) delete S.db.pesiTolti[date];
+    save(); chiudiFoglio(); app.render(); toast('Misurazione salvata'); sincronizzaSalute({ avvisa: false });
   },
-  'del-body': async el => { if (await chiedi({ titolo: 'Eliminare la misurazione?', ok: 'Elimina', pericolo: true })) { S.db.body = S.db.body.filter(m => m.id !== el.dataset.id); save(); app.render(); } },
+  'del-body': async el => { if (await chiedi({ titolo: 'Eliminare la misurazione?', ok: 'Elimina', pericolo: true })) { S.db.body = S.db.body.filter(m => m.id !== el.dataset.id); save(); app.render(); sincronizzaSalute({ avvisa: false }); } },
+  'pesate-tutte': () => { pesateTutte = !pesateTutte; app.render(); },
+  'del-peso': async el => {
+    const date = el.dataset.date;
+    if (!(await chiedi({ titolo: 'Eliminare la pesata?', testo: 'Viene tolta anche da Cartella Salute.', ok: 'Elimina', pericolo: true }))) return;
+    S.db.weights = S.db.weights.filter(w => w.date !== date); S.db.body = S.db.body.filter(b => b.date !== date);
+    S.db.pesiTolti = { ...(S.db.pesiTolti || {}), [date]: Date.now() };
+    save(); app.render(); toast('Pesata eliminata'); sincronizzaSalute({ avvisa: false });
+  },
   'mis-nuova': () => { const u = (S.db.misure || []).at(-1) || {};
     apriFoglio(`<div class="form"><label class="campo"><span>Data</span><input type="date" id="m-data" value="${todayISO()}"></label>
       <div class="due">${[['vita', 'Vita'], ['petto', 'Petto'], ['braccio', 'Braccio'], ['coscia', 'Coscia'], ['fianchi', 'Fianchi']].map(([k, l]) => `<label class="campo"><span>${l} (cm)</span><input type="number" inputmode="decimal" id="m-${k}" placeholder="${u[k] ?? ''}"></label>`).join('')}</div>

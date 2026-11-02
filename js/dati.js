@@ -3,7 +3,7 @@
    La struttura è compatibile con le versioni precedenti: migra() aggiunge solo i campi nuovi. */
 import { normDate, todayISO, uid, num, parseISO, isoOf, weekStart, addDays, isoFrom, daysBetween } from './util.js';
 
-export const VERSIONE = '6.3.1';
+export const VERSIONE = '6.4.0';
 
 /* ---------- Le tue schede di partenza (carichi aggiornati dalla Dashboard del foglio) ---------- */
 export const SCHEDE_DEFAULT = {
@@ -124,6 +124,8 @@ export function migra(d) {
     // Orologio: giorni { 'AAAA-MM-GG': [passi, metri, kcal] } e sessioni; attività extra scritte a mano
     orologio: d.orologio && d.orologio.giorni ? d.orologio : { giorni: {}, sport: [] },
     extra: d.extra || [],
+    // Pesate cancellate (qui o in Salute): non devono tornare rileggendo il foglio
+    pesiTolti: d.pesiTolti || {},
   };
 }
 

@@ -142,10 +142,11 @@ export async function scaricaDalFoglio(silenzioso = false) {
   const datePesi = new Set(S.db.weights.map(p => p.date));
   let pesiNuovi = 0;
   (r.pesi || []).forEach(p => { const kg = num(p.kg); const date = normDate(p.date);
-    if (kg && date && !datePesi.has(date)) { S.db.weights.push({ id: uid(), date, kg }); datePesi.add(date); pesiNuovi++; } });
+    if (kg && date && !datePesi.has(date) && !(S.db.pesiTolti || {})[date]) { S.db.weights.push({ id: uid(), date, kg }); datePesi.add(date); pesiNuovi++; } });
   const dash = r.dashboard || {};
   if (!cfg().goal && num(dash.obiettivo)) cfg().goal = String(num(dash.obiettivo));
   cfg().lastRead = new Date().toISOString(); save(); app.renderSafe();
+  if (pesiNuovi) import('./ponte-salute.js').then(m => m.sincronizzaSalute({ avvisa: false })).catch(() => {});   // le pesate nuove dal foglio vanno anche in Salute
   if (!silenzioso || nuovi || pesiNuovi)
     toast(`✅ Dal foglio: ${nuovi} allenamenti nuovi${silenzioso ? '' : `, ${aggiornati} aggiornati`}, ${pesiNuovi} pesate`);
   return { nuovi, aggiornati, pesiNuovi };
