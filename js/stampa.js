@@ -78,7 +78,7 @@ export function stampaDimagrimento(days = 90) {
     `<tr><td>${l}</td><td class="c">${fmt(a, 1)}</td><td class="c">${fmt(b, 1)}</td><td class="c ${b - a < 0 ? 'pos' : b - a > 0 ? 'neg' : ''}">${a != null && b != null ? segno(b - a) : '—'}</td></tr>`; }).join('') : '';
   const att = ATTIVITA.find(a => a[0] === String(s.attivita)), fase = FASI.find(f => f[0] === (s.fase || 'massa'));
   const kcalMedie = avg([...kcalGiorno.values()]), allSett = ws.length / Math.max(1, (days || giorni) / 7);
-  const dati = [s.eta && `${esc(s.eta)} anni`, s.altezza && `${esc(s.altezza)} cm`, att && `attività: ${att[1].toLowerCase()} (×${att[0]})`, fase && `fase: ${fase[1].toLowerCase()}`].filter(Boolean).join(' · ');
+  const dati = [s.eta && `${esc(s.eta)} anni`, s.altezza && `${esc(s.altezza)} cm`, att && `attività: ${att[1].toLowerCase()} (×${String(r.att ? Math.round(r.att * 100) / 100 : att[0]).replace('.', ',')})`, fase && `fase: ${fase[1].toLowerCase()}`].filter(Boolean).join(' · ');
 
   stampa('Resoconto peso e composizione', `${s.name ? esc(s.name) + ' • ' : ''}dal ${fmtFull(primo.date)} al ${fmtFull(ultimo.date)}${PER[days] ? ` (${PER[days]})` : ''}`, `
     ${dati ? `<p class="p-dati">${dati}</p>` : ''}

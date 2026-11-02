@@ -3,7 +3,7 @@
    La struttura è compatibile con le versioni precedenti: migra() aggiunge solo i campi nuovi. */
 import { normDate, todayISO, uid, num, parseISO, isoOf, weekStart, addDays, isoFrom, daysBetween } from './util.js';
 
-export const VERSIONE = '6.3.0';
+export const VERSIONE = '6.3.1';
 
 /* ---------- Le tue schede di partenza (carichi aggiornati dalla Dashboard del foglio) ---------- */
 export const SCHEDE_DEFAULT = {
@@ -98,6 +98,8 @@ export function migra(d) {
   settings.home = home;
   settings.attrezzatura = { ...JSON.parse(JSON.stringify(ATTREZZATURA_DEFAULT)), ...(settings.attrezzatura || {}) };
   const workouts = pulisciAllenamenti(d.workouts);
+  // Fabbisogno dai dati reali (orologio + attività + palestra): attivato una volta, si può cambiare in Impostazioni
+  if (!settings.attivitaAutoAttivata) { settings.attivita = 'auto'; settings.attivitaAutoAttivata = true; }
   if (!settings.programmaInizio) {
     const primo = workouts.map(w => w.date).sort()[0];
     settings.programmaInizio = primo || todayISO();
@@ -218,6 +220,7 @@ export function kcalAlMinuto() {
 export const stimaKcal = min => Math.round(kcalAlMinuto() * min);
 
 export const ATTIVITA = [
+  ['auto', 'Automatico', 'passi dell\'orologio + attività extra + palestra'],
   ['1.2', 'Sedentario', 'lavoro seduto, niente sport'],
   ['1.375', 'Leggero', 'lavoro seduto + 1-2 allenamenti'],
   ['1.55', 'Moderato', 'lavoro seduto + 3 allenamenti o calcio'],
@@ -228,6 +231,46 @@ export const FASI = [
   ['mantenimento', 'Mantenimento', 'Stesso peso, migliorare la forma'],
   ['massa', 'Massa pulita', 'Aumento lento, poco grasso'],
 ];
+/* ---------- Orologio e attività: kcal attive reali ---------- */
+export const TIPI_OROLOGIO = { 1: 'Corsa', 6: 'Camminata', 9: 'Bici', 18: 'Calcetto', 52: 'Palestra' };
+export const nomeTipoOrologio = t => (cfg().tipiOrologio || {})[t] || TIPI_OROLOGIO[t] || `Attività (tipo ${t})`;
+export const sessionePalestra = s => s.tipo === '52' || /palestra|pesi|forza/i.test(nomeTipoOrologio(s.tipo));
+/* Stessa attività anche con nomi diversi ("Calcio" scritto a mano = "Calcetto" dell'orologio) */
+export function categoriaAttivita(nome) {
+  const n = String(nome || '').toLowerCase();
+  return /calc|partit|footb|soccer/.test(n) ? 'calcio' : /palestr|pesi|forza|gym/.test(n) ? 'palestra' : /cors|run/.test(n) ? 'corsa'
+    : /cammin|passegg|escurs|trek|hik/.test(n) ? 'camminata' : /bici|cicl|mtb|bike/.test(n) ? 'bici' : /nuot|swim|piscin/.test(n) ? 'nuoto' : n.trim();
+}
+export const chiaveAttivita = (data, nome) => data + '|' + categoriaAttivita(nome);
+export const BASE_SEDENTARIO = 1.2, GIORNI_MEDIA = 28;
+/* Media al giorno delle kcal attive nelle ultime 4 settimane, senza doppioni:
+   - passi: kcal del giorno dell'orologio meno le sessioni che l'orologio ha registrato quel giorno
+   - palestra: kcal degli allenamenti dell'app (o la sessione dell'orologio nei giorni senza allenamento nell'app)
+   - extra: attività scritte a mano (calcio…) + sessioni dell'orologio che non hai scritto tu (se le scrivi tu vale la tua)
+   Il periodo finisce all'ultimo giorno importato dall'orologio (se è recente), così i giorni non ancora importati non abbassano la media. */
+export function attivitaMedia(giorni = GIORNI_MEDIA) {
+  const o = S.db.orologio || { giorni: {}, sport: [] }, oggi = todayISO();
+  const dateOro = Object.keys(o.giorni || {}).sort(), ultimo = dateOro.at(-1);
+  const fine = ultimo && ultimo <= oggi && daysBetween(ultimo, oggi) <= 14 ? ultimo : oggi, inizio = addDays(fine, -(giorni - 1));
+  const dentro = d => d >= inizio && d <= fine;
+  const sess = (o.sport || []).filter(s => dentro(s.data));
+  const kcalSess = d => sess.filter(s => s.data === d).reduce((t, s) => t + (s.kcal || 0), 0);
+  const passiGiorni = dateOro.filter(dentro).map(d => Math.max(0, (o.giorni[d][2] || 0) - kcalSess(d)));
+  const ws = S.db.workouts.filter(w => dentro(w.date)), giorniApp = new Set(ws.map(w => w.date));
+  let palestra = ws.reduce((t, w) => t + (num(w.kcal) || stimaKcal(num(w.durata) || 50)), 0), extra = 0;
+  const scritte = (S.db.extra || []).filter(e => dentro(e.data)), chiaviScritte = new Set(scritte.map(e => chiaveAttivita(e.data, e.nome)));
+  scritte.forEach(e => {
+    if (categoriaAttivita(e.nome) !== 'palestra') extra += num(e.kcal) || 0;
+    else if (!giorniApp.has(e.data)) { palestra += num(e.kcal) || 0; giorniApp.add(e.data); }   // palestra scritta come attività: una volta per giorno
+  });
+  sess.forEach(s => {
+    if (sessionePalestra(s)) { if (!giorniApp.has(s.data)) palestra += s.kcal || 0; }
+    else if (!chiaviScritte.has(chiaveAttivita(s.data, nomeTipoOrologio(s.tipo)))) extra += s.kcal || 0;
+  });
+  const passi = passiGiorni.length ? passiGiorni.reduce((a, b) => a + b, 0) / passiGiorni.length : 0;
+  return { inizio, fine, giorni, giorniPassi: passiGiorni.length, passi, palestra: palestra / giorni, extra: extra / giorni, totale: passi + (palestra + extra) / giorni };
+}
+
 export const bodySorted = () => [...S.db.body].sort((a, b) => a.date.localeCompare(b.date));
 export function corpoCalcoli() {
   const s = cfg(), ms = bodySorted();
@@ -236,7 +279,7 @@ export function corpoCalcoli() {
   const kg = ultimaMis && (!ultimoPeso || ultimaMis.date >= ultimoPeso.date) ? ultimaMis.kg : ultimoPeso ? ultimoPeso.kg : null;
   const conGrasso = ms.filter(m => m.fat != null && m.fat !== '').at(-1);
   const fat = conGrasso ? num(conGrasso.fat) : null;
-  const h = num(s.altezza), eta = num(s.eta), att = num(s.attivita) || 1.55;
+  const h = num(s.altezza), eta = num(s.eta), auto = String(s.attivita) === 'auto', att = auto ? 1.55 : num(s.attivita) || 1.55;
   const r = { kg, fat, h, eta, att, fase: s.fase || 'massa', dataGrasso: conGrasso?.date };
   if (kg && h) r.bmi = kg / Math.pow(h / 100, 2);
   if (kg && fat != null) { r.magra = kg * (1 - fat / 100); r.grassoKg = kg - r.magra; }
@@ -244,7 +287,11 @@ export function corpoCalcoli() {
   if (r.magra) { r.bmr = 370 + 21.6 * r.magra; r.formula = 'Katch-McArdle (usa la massa magra)'; }
   else if (kg && h && eta) { r.bmr = 10 * kg + 6.25 * h - 5 * eta + 5; r.formula = 'Mifflin-St Jeor (peso, altezza, età)'; }
   if (r.bmr) {
-    r.tdee = r.bmr * att;
+    if (auto) {
+      r.attivita = attivitaMedia();
+      if (r.attivita.giorniPassi >= 7) { r.tdee = r.bmr * BASE_SEDENTARIO + r.attivita.totale; r.att = r.tdee / r.bmr; r.attAuto = true; }
+      else { r.tdee = r.bmr * att; r.attAutoManca = true; }   // pochi dati dell'orologio: livello moderato
+    } else r.tdee = r.bmr * att;
     r.delta = r.fase === 'definizione' ? -Math.min(500, Math.round(r.tdee * 0.2)) : r.fase === 'massa' ? 200 : 0;
     r.kcal = Math.round((r.tdee + r.delta) / 10) * 10;
     const pg = r.fase === 'definizione' ? 2.2 : 2.0, gg = r.fase === 'definizione' ? 0.8 : 0.9;

@@ -69,6 +69,21 @@ function volume() {
 }
 
 /* ---------- Corpo ---------- */
+/* Come è calcolato il fabbisogno quando il livello di attività è "Automatico" */
+function cardFabbisogno(r) {
+  if (String(cfg().attivita) !== 'auto' || !r.bmr) return '';
+  if (r.attAutoManca) return `<section class="card avviso">${ico('info', 22)}<div class="av-txt"><b>Fabbisogno: mancano i dati dell'orologio</b>
+    <span>Nelle ultime 4 settimane ci sono meno di 7 giorni dell'orologio: per ora uso il livello Moderato (×1,55). Importa i file in Progressi → Attività.</span></div></section>`;
+  const a = r.attivita, riga = (t, v, n = '') => `<div class="pasto-riga"><span><b>${t}</b>${n ? `<small>${n}</small>` : ''}</span><b>${v}</b></div>`;
+  return `<section class="card"><div class="row"><h3>Come calcolo il fabbisogno</h3><span class="tag">×${fmt(r.att, 2)}</span></div>
+    ${riga('Metabolismo a riposo', fmt(r.bmr), r.formula)}
+    ${riga('Vita di tutti i giorni (×1,2)', '+' + fmt(r.bmr * 0.2), 'digestione e movimenti minimi')}
+    ${riga('Passi', '+' + fmt(a.passi), `dall'orologio, media di ${a.giorniPassi} giorni`)}
+    ${riga('Palestra', '+' + fmt(a.palestra), 'kcal degli allenamenti, spalmate sulla settimana')}
+    ${riga('Calcio e attività extra', '+' + fmt(a.extra), 'dall\'orologio o scritte a mano, senza doppioni')}
+    ${riga('Totale', fmt(r.tdee) + ' kcal')}
+    <p class="muted small">Media dal ${fmtDateLong(a.inizio)} al ${fmtDateLong(a.fine)}. Si aggiorna da solo quando importi l'orologio o segni allenamenti e attività. Puoi tornare a un livello fisso in Impostazioni → Profilo.</p></section>`;
+}
 function corpo() {
   const r = corpoCalcoli(), s = cfg(), goal = num(s.goal);
   const pesi = [...S.db.weights].filter(p => !period || p.date >= isoFrom(period)).sort((a, b) => a.date.localeCompare(b.date));
@@ -87,7 +102,8 @@ function corpo() {
       <div class="tile"><span class="t-lab">BMI</span><b class="t-val">${r.bmi ? fmt(r.bmi, 1) : '—'}</b><span class="t-sub">${bmiTxt || 'serve l\'altezza'}</span></div>
       <div class="tile"><span class="t-lab">Grasso</span><b class="t-val">${r.fat != null ? fmt(r.fat, 1) + '%' : '—'}</b><span class="t-sub">${r.grassoKg ? fmt(r.grassoKg, 1) + ' kg' : 'dalla bilancia'}</span></div>
       <div class="tile"><span class="t-lab">Massa magra</span><b class="t-val">${r.magra ? fmt(r.magra, 1) : '—'}</b><span class="t-sub">kg</span></div>
-      <div class="tile"><span class="t-lab">Fabbisogno</span><b class="t-val">${r.tdee ? fmt(r.tdee) : '—'}</b><span class="t-sub">kcal al giorno</span></div></section>
+      <div class="tile"><span class="t-lab">Fabbisogno</span><b class="t-val">${r.tdee ? fmt(r.tdee) : '—'}</b><span class="t-sub">kcal al giorno${r.attAuto ? ' · dai tuoi dati' : ''}</span></div></section>
+    ${cardFabbisogno(r)}
     <section class="card"><div class="row"><h3>Obiettivo: ${fase[1]}</h3><span class="tag">${fmt(ob.kcal)} kcal</span></div>
       <div class="macro-riga"><span><b>${ob.p} g</b>proteine</span><span><b>${ob.c} g</b>carboidrati</span><span><b>${ob.f} g</b>grassi</span></div>
       ${segmenti(FASI.map(([v, l]) => [v, l]), r.fase, 'fase', 'piccolo')}

@@ -75,7 +75,9 @@ Per notifiche del recupero precise anche a schermo spento il passo successivo è
 - **Importa file orologio** (Progressi → Attività): scegli i file esportati dall'app dell'orologio, anche tutti insieme.
   Servono `ACTIVITY_….csv` (passi e kcal del giorno) e `SPORT_….csv` (sessioni); gli altri vengono saltati, i doppioni pure.
 - **Attività extra**: calcetto, corsa, bici… con minuti e kcal (se le lasci vuote le stimo dal peso).
-  Se l'orologio ha già registrato la stessa attività lo stesso giorno, la conto una volta sola.
+  Se l'orologio ha registrato la stessa attività lo stesso giorno (anche con nome simile: Calcio = Calcetto), vale quella scritta da te.
 - I tipi di sessione dell'orologio arrivano come numeri: tocca la matita accanto a una sessione per dargli il nome giusto.
 - I dati restano nel telefono e finiscono nel backup settimanale del foglio (script "Palestra Backup"); non passano dal foglio degli allenamenti.
 - Il repository è pubblico: lo storico iniziale è cifrato e si apre solo con il codice personale.
+- **Fabbisogno automatico** (Impostazioni → Profilo → Livello di attività → Automatico): metabolismo × 1,2 + kcal dei passi dall'orologio
+  + palestra + calcio e attività extra, media delle ultime 4 settimane. La spiegazione del calcolo è in Progressi → Corpo.

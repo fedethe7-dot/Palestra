@@ -1,41 +1,43 @@
 /* ============ ATTIVITÀ ============
    Passi, calorie e allenamenti: dati dell'orologio (file importati) + attività extra scritte a mano
-   (calcetto, corsa, bici…). Niente doppioni: un'attività scritta a mano che l'orologio ha già
-   registrato lo stesso giorno con lo stesso nome viene mostrata ma non contata due volte. */
-import { S, save, cfg, sorted, bodyKg } from '../dati.js';
+   (calcetto, corsa, bici…). Niente doppioni: se scrivi a mano un'attività che l'orologio ha già
+   registrato lo stesso giorno (anche con un nome simile: Calcio = Calcetto), vale la tua e quella dell'orologio non si conta. */
+import { S, save, cfg, sorted, bodyKg, TIPI_OROLOGIO, nomeTipoOrologio, sessionePalestra, chiaveAttivita, categoriaAttivita } from '../dati.js';
 import { esc, fmt, num, todayISO, isoFrom, addDays, weekStart, fmtDate, fmtDateLong, fmtDateFull, uid, toast, chiedi, parseISO } from '../util.js';
 import { ico, app, vuoto, apriFoglio, chiudiFoglio } from '../ui.js';
 import { barChart } from '../grafici.js';
 import { leggiFile, unisci, decifra } from '../orologio-file.js';
 
 /* Tipi di sessione dell'orologio (il file dà solo un numero): si possono rinominare dall'app */
-export const TIPI_OROLOGIO = { 1: 'Corsa', 6: 'Camminata', 9: 'Bici', 18: 'Calcetto', 52: 'Palestra' };
 /* Attività extra veloci: nome, emoji, MET (per stimare le kcal se non le scrivi) */
 export const TIPI_EXTRA = [['Calcetto', '⚽', 8], ['Corsa', '🏃', 9], ['Camminata', '🚶', 3.5], ['Bici', '🚴', 6.5], ['Nuoto', '🏊', 7], ['Altro', '✨', 5]];
 
 const oro = () => S.db.orologio || (S.db.orologio = { giorni: {}, sport: [] });
-export const nomeTipo = t => (cfg().tipiOrologio || {})[t] || TIPI_OROLOGIO[t] || `Attività (tipo ${t})`;
-const isPalestra = s => s.tipo === '52' || /palestra|pesi|forza/i.test(nomeTipo(s.tipo));
+export { TIPI_OROLOGIO };
+export const nomeTipo = nomeTipoOrologio;
+const isPalestra = sessionePalestra;
 const emoji = nome => (TIPI_EXTRA.find(([x]) => x.toLowerCase() === String(nome).trim().toLowerCase()) || [0, '🏅'])[1];
 const met = nome => (TIPI_EXTRA.find(([x]) => x.toLowerCase() === String(nome).trim().toLowerCase()) || [0, 0, 5])[2];
 export const stimaKcalExtra = (nome, min) => Math.round(met(nome) * (bodyKg() || 73) * (num(min) || 0) / 60);
 
 /* Tutte le attività dal giorno "da" in poi (orologio + a mano), dalla più recente */
 export function attivita(da = '') {
-  const out = [];
-  oro().sport.forEach(s => { if (s.data >= da) out.push({ fonte: 'orologio', id: s.id, data: s.data, ora: s.ora || '', tipo: s.tipo, nome: nomeTipo(s.tipo), min: Math.round(s.sec / 60), km: s.m ? s.m / 1000 : 0, kcal: s.kcal || 0, palestra: isPalestra(s) }); });
-  const k = (d, n) => d + '|' + String(n).trim().toLowerCase();
-  const dallOrologio = new Set(out.map(a => k(a.data, a.nome)));
-  (S.db.extra || []).forEach(e => { if (e.data >= da) out.push({ fonte: 'mano', id: e.id, data: e.data, ora: '', nome: e.nome, min: e.min, km: 0, kcal: e.kcal || 0, stima: !!e.stima, note: e.note || '', palestra: false, doppione: dallOrologio.has(k(e.data, e.nome)) }); });
+  const out = [], manuali = (S.db.extra || []).filter(e => e.data >= da);
+  const scritte = new Set(manuali.map(e => chiaveAttivita(e.data, e.nome)));
+  const giorniApp = new Set(sorted().map(w => w.date));
+  oro().sport.forEach(s => { if (s.data >= da) { const pal = isPalestra(s);
+    out.push({ fonte: 'orologio', id: s.id, data: s.data, ora: s.ora || '', tipo: s.tipo, nome: nomeTipo(s.tipo), min: Math.round(s.sec / 60), km: s.m ? s.m / 1000 : 0, kcal: s.kcal || 0, palestra: pal,
+      sostituita: pal ? giorniApp.has(s.data) || scritte.has(chiaveAttivita(s.data, 'palestra')) : scritte.has(chiaveAttivita(s.data, nomeTipo(s.tipo))) }); } });
+  manuali.forEach(e => out.push({ fonte: 'mano', id: e.id, data: e.data, ora: '', nome: e.nome, min: e.min, km: 0, kcal: e.kcal || 0, stima: !!e.stima, note: e.note || '', palestra: categoriaAttivita(e.nome) === 'palestra' }));
   return out.sort((a, b) => (b.data + b.ora).localeCompare(a.data + a.ora));
 }
 
 /* Numeri del periodo */
 export function riepilogo(da = '') {
   const giorni = Object.entries(oro().giorni).filter(([d]) => d >= da);
-  const att = attivita(da), extra = att.filter(a => !a.palestra && !a.doppione);
+  const att = attivita(da), extra = att.filter(a => !a.palestra && !a.sostituita);
   const giorniOro = new Set(giorni.map(([d]) => d));
-  const giorniPalestra = new Set([...sorted().filter(w => w.date >= da).map(w => w.date), ...att.filter(a => a.palestra).map(a => a.data)]);
+  const giorniPalestra = new Set([...sorted().filter(w => w.date >= da).map(w => w.date), ...att.filter(a => a.palestra && !a.sostituita).map(a => a.data)]);
   const kcalOro = giorni.reduce((s, [, v]) => s + v[2], 0);
   const kcalMano = extra.filter(a => a.fonte === 'mano' && !giorniOro.has(a.data)).reduce((s, a) => s + a.kcal, 0);   // giorni senza orologio
   return {
@@ -76,10 +78,10 @@ export function tabAttivita(period) {
   const passi = g.map((x, i) => { const v = Object.entries(o.giorni).filter(([d]) => inG(x, d)).map(([, v]) => v[0]); return { label: x.label, value: v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : 0, evid: i === g.length - 1 }; });
   const kcal = g.map((x, i) => {
     const gg = Object.entries(o.giorni).filter(([d]) => inG(x, d)), giorniOro = new Set(gg.map(([d]) => d));
-    const mano = r.att.filter(a => a.fonte === 'mano' && !a.doppione && inG(x, a.data) && !giorniOro.has(a.data)).reduce((s, a) => s + a.kcal, 0);
+    const mano = r.att.filter(a => a.fonte === 'mano' && !a.palestra && inG(x, a.data) && !giorniOro.has(a.data)).reduce((s, a) => s + a.kcal, 0);
     return { label: x.label, value: gg.reduce((s, [, v]) => s + v[2], 0) + mano, evid: i === g.length - 1 };
   });
-  const sessioni = g.map((x, i) => ({ label: x.label, value: [...r.giorniPalestra].filter(d => inG(x, d)).length + r.att.filter(a => !a.palestra && !a.doppione && inG(x, a.data)).length, evid: i === g.length - 1 }));
+  const sessioni = g.map((x, i) => ({ label: x.label, value: [...r.giorniPalestra].filter(d => inG(x, d)).length + r.att.filter(a => !a.palestra && !a.sostituita && inG(x, a.data)).length, evid: i === g.length - 1 }));
   const lista = tutte ? r.att : r.att.slice(0, 20);
 
   const storico = !o.storico ? `<section class="card avviso">${ico('nuvola', 22)}<div class="av-txt"><b>Storico dell'orologio pronto</b>
@@ -107,7 +109,7 @@ export function tabAttivita(period) {
 function rigaAttivita(a) {
   const det = [fmtDateLong(a.data) + (a.ora ? ' ' + a.ora : ''), a.min ? a.min + ' min' : '', a.km >= 0.1 ? fmt(a.km, 1) + ' km' : '', a.kcal ? fmt(a.kcal) + ' kcal' + (a.stima ? ' (stima)' : '') : '',
     a.fonte === 'orologio' ? '⌚' : '✍️'].filter(Boolean).join(' · ');
-  const nota = a.doppione ? `<small>già registrata dall'orologio: non la conto due volte</small>` : a.note ? `<small>${esc(a.note)}</small>` : '';
+  const nota = a.sostituita ? `<small>${a.palestra ? 'conto l\'allenamento che hai segnato tu' : 'conto quella che hai scritto tu'}</small>` : a.note ? `<small>${esc(a.note)}</small>` : '';
   const btn = a.fonte === 'mano'
     ? `<button class="icon-btn small" data-action="att-del" data-id="${esc(a.id)}" aria-label="Elimina">${ico('cestino', 16)}</button>`
     : `<button class="icon-btn small" data-action="oro-tipo" data-t="${esc(a.tipo)}" aria-label="Rinomina il tipo">${ico('matita', 16)}</button>`;
@@ -168,11 +170,11 @@ export const azioni = {
     const k = x => x.data + '|' + String(x.nome).trim().toLowerCase();
     if ((S.db.extra || []).some(e => k(e) === k({ data, nome })) &&
       !(await chiedi({ titolo: `Hai già segnato ${nome} in questa data`, testo: 'Vuoi aggiungerne un\'altra?', ok: 'Aggiungi' }))) return;
-    const giaOrologio = oro().sport.some(s => s.data === data && nomeTipo(s.tipo).toLowerCase() === nome.toLowerCase());
+    const giaOrologio = oro().sport.some(s => chiaveAttivita(s.data, nomeTipo(s.tipo)) === chiaveAttivita(data, nome));
     S.db.extra = S.db.extra || [];
     S.db.extra.push({ id: uid(), data, nome, min: Math.round(min), kcal: kcalScritte != null ? Math.round(kcalScritte) : stimaKcalExtra(nome, min), stima: kcalScritte == null, note: v('a-note') });
     save(); chiudiFoglio(); app.render();
-    toast(giaOrologio ? `Salvata. L'orologio ha già ${nome} in quel giorno: la conto una volta sola` : `${emoji(nome)} ${nome} salvato`);
+    toast(giaOrologio ? `Salvata. L'orologio aveva già ${nome} quel giorno: conto la tua, una volta sola` : `${emoji(nome)} ${nome} salvato`);
   },
   'att-del': async el => {
     if (!(await chiedi({ titolo: 'Eliminare l\'attività?', ok: 'Elimina', pericolo: true }))) return;
