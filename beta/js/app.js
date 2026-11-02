@@ -19,9 +19,9 @@ const VISTE = {
   oggi: Oggi.viewOggi, allena: Allena.viewAllena,
   schede: Schede.viewSchede, modifica: Schede.viewModifica, libreria: Schede.viewLibreria, esercizio: Schede.viewEsercizio,
   'crea-esercizio': Schede.viewCreaEsercizio, storico: Schede.viewStorico, 'nuova-scheda': Schede.viewNuovaScheda,
-  progressi: Progressi.viewProgressi, cucina: Cucina.viewCucina, ricetta: Cucina.viewRicetta, impostazioni: Imp.viewImpostazioni,
+  progressi: Progressi.viewProgressi, cucina: Cucina.viewCucina, ricetta: Cucina.viewRicetta, 'ricetta-nuova': Cucina.viewRicettaNuova, impostazioni: Imp.viewImpostazioni,
 };
-const TAB = { modifica: 'schede', libreria: 'schede', esercizio: 'schede', 'crea-esercizio': 'schede', storico: 'schede', 'nuova-scheda': 'schede', ricetta: 'cucina', allena: 'allenati' };
+const TAB = { modifica: 'schede', libreria: 'schede', esercizio: 'schede', 'crea-esercizio': 'schede', storico: 'schede', 'nuova-scheda': 'schede', ricetta: 'cucina', 'ricetta-nuova': 'cucina', allena: 'allenati' };
 const MODULI = [Allena, Schede, Progressi, Cucina, Imp, Oggi, Strumenti];
 const AZIONI = Object.assign({}, ...MODULI.map(m => m.azioni || {}));
 
@@ -57,6 +57,7 @@ function go(v, param = null, { storia = true } = {}) {
   chiudiFoglio(true); chiudiRestFull();
   const prima = S.view;
   if (prima === 'ricetta' && v !== 'ricetta') Cucina.esci();
+  if (prima === 'ricetta-nuova' && v !== 'ricetta-nuova') Cucina.esciBozza();
   S.view = VISTE[v] ? v : 'oggi'; S.param = param;
   if (storia) history.pushState({ v: S.view, p: param }, '', '#' + S.view);
   render(); window.scrollTo(0, 0);
@@ -93,7 +94,7 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role=button][data-action]')) { e.preventDefault(); e.target.click(); }
   if (e.key === 'Enter' && e.target.id === 'sp-nuovo') AZIONI['spesa-add']();
 });
-document.addEventListener('input', e => { for (const m of MODULI) if (m.input && m.input(e.target)) return; });
+document.addEventListener('input', e => { if (e.target.classList?.contains('st-val')) e.target.style.setProperty('--ch', Math.max(2, e.target.value.length)); for (const m of MODULI) if (m.input && m.input(e.target)) return; });
 document.addEventListener('change', async e => {
   const t = e.target;
   if (t.id === 'file' && t.files[0]) {

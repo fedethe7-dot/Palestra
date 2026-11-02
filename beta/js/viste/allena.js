@@ -1,7 +1,7 @@
 /* ============ ALLENAMENTO IN CORSO ============
    Un esercizio alla volta: serie con "precedente", pulsanti grandi −/+, RIR, dischi da montare,
    recupero automatico, esercizi a tempo con conto 3-2-1, riepilogo finale. */
-import { S, save, cfg, records, lastFor, durataAuto, durataDraft, stimaKcal, bodyKg, nextSession } from '../dati.js';
+import { S, save, cfg, records, lastFor, durataAuto, durataDraft, riallineaTempo, stimaKcal, bodyKg, nextSession } from '../dati.js';
 import { esc, fmt, num, todayISO, toast, chiedi, restSec, vibra, uid, secTxt, clamp, fmtDateLong } from '../util.js';
 import { ico, app, apriFoglio, chiudiFoglio, stepper, festa } from '../ui.js';
 import { obiettivo, passoKg, dischiBilanciere, dischiCarrucola, riscaldamento, eRecord, rangeDi } from '../coach.js';
@@ -129,6 +129,7 @@ function dock(e, i, n) {
 export function viewAllena() {
   const d = S.db.draft;
   if (!d) { app.go('oggi'); return ''; }
+  if (riallineaTempo(d)) save();
   const n = d.exercises.length, cur = clamp(d.cur || 0, 0, n);
   document.body.dataset.restInline = '1';
   const top = `<header class="wk-top"><button class="icon-btn" data-action="go" data-view="oggi" aria-label="Torna a Oggi (l'allenamento resta aperto)">${ico('giu')}</button>
@@ -220,6 +221,8 @@ function segnaFatta(i, j) {
   const kg = num(s.kg), reps = num(s.reps);
   const rec = e.tipo === 'carico' && !s.warm && !e.recordVisto && eRecord(e.nome, kg, reps) && lastFor(e.nome);
   if (rec) e.recordVisto = true;
+  if (!d.exercises.some(x => x.sets.some(y => y.done)) && Date.now() - d.startedAt > 45 * 60000) d.startedAt = Date.now() - 3 * 60000;
+  d.ultimaAttivita = Date.now();
   s.done = true; s.sel = false; save();
   sbloccaAudio(); if (S.db.settings.vibrazione) vibra(30);
   if (rec) { festa(); beep(1318, 0.12, 2); toast(`🏆 Nuovo record su ${e.nome}: ${fmt(kg, 2)} kg × ${reps}!`); }

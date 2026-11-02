@@ -34,7 +34,7 @@
 }
 :root[data-stile=vetro][data-modo=scuro], :root:not([data-stile]) {
   color-scheme: dark;
-  --bg: #060914; --bg-sticky: rgba(6, 9, 20, .82);
+  --bg: #060914; --bg-sticky: rgba(6, 9, 20, .94);
   --bg-deco: radial-gradient(600px 420px at -10% -5%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 70%),
     radial-gradient(520px 420px at 115% 30%, color-mix(in srgb, var(--accent-b) 32%, transparent), transparent 70%),
     radial-gradient(480px 380px at 20% 105%, rgba(244, 114, 182, .2), transparent 70%), #060914;
@@ -57,7 +57,7 @@
 }
 :root[data-stile=vetro][data-modo=chiaro] {
   color-scheme: light;
-  --bg: #eef1fb; --bg-sticky: rgba(238, 241, 251, .85);
+  --bg: #eef1fb; --bg-sticky: rgba(238, 241, 251, .95);
   --bg-deco: radial-gradient(600px 420px at -10% -5%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 70%),
     radial-gradient(520px 420px at 115% 30%, color-mix(in srgb, var(--accent-b) 24%, transparent), transparent 70%), #eef1fb;
   --surface: rgba(255, 255, 255, .62); --surface2: rgba(255, 255, 255, .8); --line: rgba(30, 36, 80, .1); --line-strong: rgba(30, 36, 80, .2);

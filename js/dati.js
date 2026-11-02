@@ -3,7 +3,7 @@
    La struttura è compatibile con le versioni precedenti: migra() aggiunge solo i campi nuovi. */
 import { normDate, todayISO, uid, num, parseISO, isoOf, weekStart, addDays, isoFrom, daysBetween } from './util.js';
 
-export const VERSIONE = '6.0.0';
+export const VERSIONE = '6.1.1';
 
 /* ---------- Le tue schede di partenza (carichi aggiornati dalla Dashboard del foglio) ---------- */
 export const SCHEDE_DEFAULT = {
@@ -191,6 +191,16 @@ export function bodyKg() {
 export function durataAuto(d) {
   if (d.startedAt) return Math.min(180, Math.max(1, Math.round((Date.now() - d.startedAt) / 60000)));
   return Math.round(d.exercises.reduce((s, e) => s + e.sets.length, 0) * 2.5);
+}
+/* Tempo dell'allenamento: non conta le ore in cui l'app è rimasta aperta senza fare niente */
+const ORA = 3600000;
+export function riallineaTempo(d) {
+  if (!d || !d.startedAt) return false;
+  const ora = Date.now(), fatte = d.exercises.some(e => e.sets.some(s => s.done));
+  if (!fatte) { if (ora - d.startedAt > ORA) { d.startedAt = ora; return true; } return false; }
+  const ult = d.ultimaAttivita || d.startedAt;
+  if (ora - ult > 2 * ORA) { d.startedAt += ora - ult; d.ultimaAttivita = ora; return true; }
+  return false;
 }
 export const durataDraft = d => num(d.durata) || durataAuto(d);
 export function kcalAlMinuto() {

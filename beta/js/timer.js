@@ -4,7 +4,7 @@
    - Recupero: parte da solo quando segni una serie (S.db.draft.rest)
    - Esercizi a tempo (plank & co.): conto 3-2-1, poi conto alla rovescia (S.db.draft.work)
    - Strumenti: cronometro e timer libero, usabili anche senza allenamento */
-import { S, save, cfg } from './dati.js';
+import { S, save, cfg, riallineaTempo } from './dati.js';
 import { $, mmss, vibra, toast, num, restSec, clamp } from './util.js';
 import { ico, app } from './ui.js';
 
@@ -191,6 +191,7 @@ function drawWork() {
 }
 function drawElapsed() {
   const els = document.querySelectorAll('[data-elapsed]'); if (!els.length || !S.db.draft?.startedAt) return;
+  if (riallineaTempo(S.db.draft)) save();
   const m = Math.floor((Date.now() - S.db.draft.startedAt) / 60000);
   els.forEach(el => el.textContent = m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`);
 }

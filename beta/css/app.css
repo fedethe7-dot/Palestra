@@ -182,7 +182,7 @@ body.in-allenamento #nav { display: none; }
 .lettera { width: 38px; height: 38px; flex: none; border-radius: var(--r-s); background: var(--accent-soft); color: var(--accent-text); display: grid; place-items: center; font-weight: 800; font-family: var(--font-display); }
 
 /* ---------- Allenamento ---------- */
-.wk-top { display: flex; align-items: center; gap: 8px; padding: 14px 0 10px; position: sticky; top: 0; z-index: 5; background: var(--bg-sticky, var(--bg)); margin-inline: -16px; padding-inline: 16px; padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+.wk-top { display: flex; align-items: center; gap: 8px; padding: 14px 0 10px; position: sticky; top: 0; z-index: 5; background: var(--bg-sticky, var(--bg)); -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2); margin-inline: -16px; padding-inline: 16px; padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
 .wk-tt { flex: 1; min-width: 0; display: flex; flex-direction: column; } .wk-tt b { font-family: var(--font-display); text-transform: var(--display-case); } .wk-tt span { font-size: .8rem; color: var(--muted); }
 .wk-prog { display: flex; gap: 5px; margin: 2px 0 14px; }
 .wk-prog button { flex: 1; height: 8px; padding: 0; border: 0; border-radius: 6px; background: var(--track); position: relative; }
@@ -225,10 +225,14 @@ body.in-allenamento #nav { display: none; }
 .ed-steppers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .ed-steppers.uno { grid-template-columns: minmax(0, 1fr); }
 .stepper { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
 .st-lab { font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.st-row { display: flex; align-items: center; gap: 6px; width: 100%; }
-.st-btn { width: 48px; height: 52px; flex: none; border-radius: var(--r-s); border: 1px solid var(--line-strong); background: var(--surface2); color: var(--text); display: grid; place-items: center; }
+.st-row { display: flex; align-items: center; gap: 6px; width: 100%; container-type: inline-size; --st-b: 48px; }
+@media (max-width: 420px) { /* telefono: numero sopra a tutta larghezza, − e + sotto */
+  .st-row { flex-wrap: wrap; --st-spazio: calc(100cqw - 8px); --st-max: calc(var(--st-num, 1.9rem) * 1.3); }
+  .st-row input.st-val { order: -1; flex: 1 0 100%; min-height: 56px !important; }
+  .st-row .st-btn { flex: 1 1 0; width: auto; height: 48px; } }
+.st-btn { width: var(--st-b, 48px); height: 52px; flex: none; border-radius: var(--r-s); border: 1px solid var(--line-strong); background: var(--surface2); color: var(--text); display: grid; place-items: center; }
 .st-btn:active { transform: scale(.94); background: var(--accent-soft); }
-input.st-val { flex: 1; min-width: 0; min-height: 52px !important; padding: 0 !important; text-align: center; font-family: var(--font-num); font-size: var(--st-num, 1.9rem) !important; font-weight: var(--num-weight, 800); border: 0 !important; background: transparent !important; font-variant-numeric: tabular-nums; }
+input.st-val { flex: 1; min-width: 0; min-height: 52px !important; padding: 0 !important; text-align: center; font-family: var(--font-num); font-size: min(var(--st-max, var(--st-num, 1.9rem)), calc(var(--st-spazio, calc(100cqw - 2 * var(--st-b, 48px) - 16px)) / (var(--ch, 2) * .8))) !important; font-weight: var(--num-weight, 800); border: 0 !important; background: transparent !important; font-variant-numeric: tabular-nums; }
 .st-unit { font-size: .72rem; color: var(--muted); }
 .rir { display: flex; flex-direction: column; gap: 6px; }
 .rir-lab { font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); } .rir-lab small { text-transform: none; letter-spacing: 0; font-weight: 500; }
@@ -430,6 +434,7 @@ body.in-allenamento #rest { display: none; }
 .spesa { display: flex; flex-direction: column; }
 .sp-riga { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); cursor: pointer; min-height: 48px; }
 .sp-riga input { width: 22px; height: 22px; accent-color: var(--accent); } .sp-riga span { flex: 1; } .sp-riga.fatto span, .sp-riga.fatto b { text-decoration: line-through; color: var(--muted); }
+.ing-edit { display: grid; grid-template-columns: 1fr 76px 36px; gap: 6px; align-items: center; }
 .sp-add { display: flex; gap: 8px; margin-top: 10px; } .sp-add .btn { width: 50px; }
 
 /* ---------- Strumenti ---------- */

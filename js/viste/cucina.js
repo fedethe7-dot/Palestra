@@ -19,6 +19,12 @@ let tab = 'oggi', cat = 'Tutte', query = '', giorno = null, porz = null, passo =
 
 /* ---------- Calcoli ---------- */
 export function ricMacro(r) {
+  const n0 = r.porzioni || 1;
+  if (r.manuale) { // valori scritti a mano (per porzione)
+    const m = r.manuale, g = r.ingredienti.reduce((s, i) => s + (i.g || 0), 0);
+    const por = { kcal: m.kcal || 0, p: m.p || 0, c: m.c || 0, f: m.f || 0, g: g / n0 };
+    return { tot: { kcal: por.kcal * n0, p: por.p * n0, c: por.c * n0, f: por.f * n0, g }, por };
+  }
   const t = { kcal: 0, p: 0, c: 0, f: 0, g: 0 };
   r.ingredienti.forEach(i => { const q = i.g / 100; t.kcal += (i.kcal || 0) * q; t.p += (i.p || 0) * q; t.c += (i.c || 0) * q; t.f += (i.f || 0) * q; t.g += i.g || 0; });
   const n = r.porzioni || 1;
@@ -77,15 +83,16 @@ function ricettaCard(r) {
 }
 function ricLista() {
   const q = query.trim().toLowerCase();
-  const l = (S.db.ricette || []).filter(r => (cat === 'Tutte' || (cat === 'pref' ? r.preferita : r.categoria === cat)) &&
+  const l = (S.db.ricette || []).filter(r => (cat === 'Tutte' || (cat === 'pref' ? r.preferita : cat === 'mie' ? r.mia : r.categoria === cat)) &&
     (!q || `${r.nome} ${r.ingredienti.map(i => i.nome).join(' ')}`.toLowerCase().includes(q)));
   return l.length ? l.map(ricettaCard).join('') : vuoto(cat === 'pref' ? 'Nessuna preferita: tocca il cuore in una ricetta' : 'Nessuna ricetta trovata', 'cucina');
 }
 function viewRicetteLista() {
   const tutte = S.db.ricette || [];
-  if (!tutte.length) return `${vuoto('Nessuna ricetta ancora: importa un file CSV', 'cucina')}<button class="btn full" data-action="ric-import">${ico('carica', 18)} Importa ricette (CSV)</button>`;
-  const cats = [['Tutte', 'Tutte'], ['pref', 'Preferite'], ...CATEGORIE.filter(([c]) => tutte.some(r => r.categoria === c))];
-  return `<div class="cerca-box">${ico('cerca', 18)}<input id="ric-cerca" type="search" placeholder="Cerca ricetta o ingrediente" value="${esc(query)}"></div>
+  const nuova = `<button class="btn primary full" data-action="go" data-view="ricetta-nuova">${ico('piu', 18)} Nuova ricetta o piatto</button>`;
+  if (!tutte.length) return `${vuoto('Nessuna ricetta ancora', 'cucina')}${nuova}<button class="btn full" data-action="ric-import">${ico('carica', 18)} Importa ricette (CSV)</button>`;
+  const cats = [['Tutte', 'Tutte'], ['pref', 'Preferite'], ...(tutte.some(r => r.mia) ? [['mie', 'Mie']] : []), ...CATEGORIE.filter(([c]) => tutte.some(r => r.categoria === c))];
+  return `${nuova}<div class="cerca-box">${ico('cerca', 18)}<input id="ric-cerca" type="search" placeholder="Cerca ricetta o ingrediente" value="${esc(query)}"></div>
     <div class="chips scorri">${cats.map(([v, l]) => `<button class="pill ${cat === v ? 'on' : ''}" data-action="ric-cat" data-v="${esc(v)}">${l}</button>`).join('')}</div>
     <div class="ric-griglia" id="ric-lista">${ricLista()}</div>
     <div class="row-btns"><button class="btn full" data-action="ric-import">${ico('carica', 18)} Importa CSV</button><button class="btn full" data-action="ric-modello">${ico('scarica', 18)} Esporta CSV</button></div>
@@ -131,7 +138,50 @@ export function viewRicetta() {
     <div class="row-btns"><button class="btn primary full" data-action="ric-cucina">${ico('play', 18)} Cucina passo passo</button></div>
     <div class="row-btns"><button class="btn full" data-action="ric-diario" data-id="${esc(r.id)}">${ico('piu', 18)} Al diario</button><button class="btn full" data-action="ric-spesa" data-id="${esc(r.id)}">${ico('carrello', 18)} Alla spesa</button></div>
     ${!r.foto && paginaFoto(r) ? `<p class="muted small centro">Foto indicativa da <a href="${paginaFoto(r)}" target="_blank" rel="noopener">Wikimedia Commons</a> (licenza libera)</p>` : ''}
+    ${r.mia ? `<button class="btn full" data-action="go" data-view="ricetta-nuova" data-p="${esc(r.id)}">${ico('matita', 18)} Modifica ricetta</button>` : ''}
     <button class="btn ghost danger full" data-action="ric-del" data-id="${esc(r.id)}">${ico('cestino', 18)} Elimina ricetta</button></div>`;
+}
+
+/* ---------- Nuova ricetta o piatto (valori scritti a mano) ---------- */
+let bozzaRic = null;
+const nuovaBozza = () => ({ nome: '', categoria: 'Pranzi', porzioni: 1, prep: '', cottura: '', ingredienti: [{ nome: '', g: '' }, { nome: '', g: '' }],
+  per: 'porzione', kcal: '', p: '', c: '', f: '', procedimento: '', note: '', foto: '', preferita: false });
+export function viewRicettaNuova() {
+  if (!bozzaRic || bozzaRic._per !== S.param) {
+    const r = S.param ? (S.db.ricette || []).find(x => x.id === S.param) : null;
+    if (r) { const m = ricMacro(r).por;
+      bozzaRic = { nome: r.nome, categoria: r.categoria || 'Pranzi', porzioni: r.porzioni || 1, prep: r.prep || '', cottura: r.cottura || '',
+        ingredienti: r.ingredienti.map(i => ({ nome: i.nome, g: i.g })), per: 'porzione', kcal: fmt(m.kcal, 1), p: fmt(m.p, 1), c: fmt(m.c, 1), f: fmt(m.f, 1),
+        procedimento: r.procedimento || '', note: r.note || '', foto: r.foto || '', preferita: !!r.preferita };
+    } else bozzaRic = nuovaBozza();
+    bozzaRic._per = S.param;
+  }
+  const b = bozzaRic, cats = [...CATEGORIE.map(c => c[0]), 'Altro'];
+  return `${testata(S.param ? 'Modifica ricetta' : 'Nuova ricetta', 'Ricetta o piatto tuo', { back: 'cucina', destra: '' })}
+    <div class="pila"><section class="card form">
+      <label class="campo"><span>Nome</span><input data-rb="nome" value="${esc(b.nome)}" placeholder="Es. Pasta al pesto con pollo"></label>
+      <div class="due"><label class="campo"><span>Categoria</span><select data-rb="categoria">${cats.map(c => `<option ${c === b.categoria ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+        <label class="campo"><span>Porzioni</span><input type="number" inputmode="numeric" min="1" data-rb="porzioni" value="${esc(b.porzioni)}"></label>
+        <label class="campo"><span>Preparazione (min)</span><input type="number" inputmode="numeric" data-rb="prep" value="${esc(b.prep)}"></label>
+        <label class="campo"><span>Cottura (min)</span><input type="number" inputmode="numeric" data-rb="cottura" value="${esc(b.cottura)}"></label></div></section>
+    <section class="card form"><div class="row"><h3>Ingredienti</h3><span class="muted small">quantità per ${b.porzioni > 1 ? `tutte le ${esc(b.porzioni)} porzioni` : '1 porzione'}</span></div>
+      ${b.ingredienti.map((i, k) => `<div class="ing-edit"><input data-rb-ing="${k}" data-k="nome" value="${esc(i.nome)}" placeholder="Ingrediente" aria-label="Ingrediente ${k + 1}">
+        <input data-rb-ing="${k}" data-k="g" value="${esc(i.g)}" inputmode="decimal" placeholder="g" aria-label="Grammi ingrediente ${k + 1}">
+        <button class="icon-btn small" data-action="rb-ing-del" data-i="${k}" aria-label="Togli ingrediente">${ico('chiudi', 16)}</button></div>`).join('')}
+      <button class="btn small ghost" data-action="rb-ing-add">${ico('piu', 16)} Ingrediente</button></section>
+    <section class="card form"><h3>Valori nutrizionali</h3>
+      ${segmenti([['porzione', 'Per porzione'], ['totale', 'Ricetta intera']], b.per, 'rb-per', 'piccolo')}
+      <div class="due"><label class="campo"><span>Calorie (kcal)</span><input data-rb="kcal" inputmode="decimal" value="${esc(b.kcal)}" placeholder="es. 650"></label>
+        <label class="campo"><span>Proteine (g)</span><input data-rb="p" inputmode="decimal" value="${esc(b.p)}"></label>
+        <label class="campo"><span>Grassi (g)</span><input data-rb="f" inputmode="decimal" value="${esc(b.f)}"></label>
+        <label class="campo"><span>Carboidrati (g)</span><input data-rb="c" inputmode="decimal" value="${esc(b.c)}" placeholder="facoltativo"></label></div>
+      <p class="muted small">Li trovi sulle etichette o nell'app che usi per contare le calorie. Se scegli "Ricetta intera" li divido io per le porzioni.</p></section>
+    <section class="card form"><h3>Preparazione</h3>
+      <label class="campo"><span>Procedimento (un passo per riga)</span><textarea data-rb="procedimento" placeholder="1. Cuoci la pasta&#10;2. Scalda il sugo...">${esc(b.procedimento)}</textarea></label>
+      <label class="campo"><span>Note</span><input data-rb="note" value="${esc(b.note)}" placeholder="Consigli, varianti..."></label>
+      <label class="campo"><span>Link di una foto (facoltativo)</span><input data-rb="foto" value="${esc(b.foto)}" placeholder="https://..." inputmode="url"></label>
+      <label class="riga-check"><input type="checkbox" data-rb-pref ${b.preferita ? 'checked' : ''}> Aggiungi alle preferite</label></section>
+    <button class="btn primary huge full" data-action="rb-salva">${ico('salva', 20)} Salva ricetta</button></div>`;
 }
 
 /* ---------- Cucina passo passo ---------- */
@@ -182,7 +232,7 @@ export function importRicetteCSV(text, silenzioso = false) {
     const id = v(r, 'id'), nome = v(r, 'nome'), ing = v(r, 'ing');
     if (!id && !nome && !ing) return;
     if (nome || (id && (!cur || id !== cur.id))) {
-      cur = { id: id || slug(nome), nome: nome || id, categoria: v(r, 'cat'), porzioni: num(v(r, 'porz')) || 1, prep: num(v(r, 'prep')) || 0, cottura: num(v(r, 'cott')) || 0,
+      cur = { id: id || slug(nome), ...((id || '').startsWith('mia-') ? { mia: true } : {}), nome: nome || id, categoria: v(r, 'cat'), porzioni: num(v(r, 'porz')) || 1, prep: num(v(r, 'prep')) || 0, cottura: num(v(r, 'cott')) || 0,
         procedimento: v(r, 'proc'), note: v(r, 'note'), preferita: /^(s[iì]|x|1|true|vero)$/i.test(v(r, 'pref')), foto: /^https?:\/\//.test(v(r, 'foto')) ? v(r, 'foto') : '', ingredienti: [] };
       nuove.push(cur);
     }
@@ -215,7 +265,9 @@ export async function caricaRicetteBase() {
 }
 function esportaCSV() {
   const q = s => /[;"\n]/.test(s) ? `"${String(s).replace(/"/g, '""')}"` : s;
-  const righe = [COLONNE_RICETTE, ...(S.db.ricette || []).flatMap(r => r.ingredienti.map((i, k) => [
+  const per100 = r => { if (!r.manuale) return null; const t = ricMacro(r).tot, g = t.g || 0; return g ? { kcal: t.kcal / g * 100, p: t.p / g * 100, c: t.c / g * 100, f: t.f / g * 100 } : null; };
+  const conIng = r => { const x = per100(r); return x ? r.ingredienti.map(i => ({ ...i, ...x })) : r.ingredienti; };
+  const righe = [COLONNE_RICETTE, ...(S.db.ricette || []).flatMap(r => conIng(r).map((i, k) => [
     r.id, k ? '' : r.nome, k ? '' : r.categoria, k ? '' : r.porzioni, k ? '' : r.prep, k ? '' : r.cottura,
     i.nome, i.g, i.kcal, i.p, i.c, i.f, k ? '' : r.procedimento, k ? '' : r.note, k ? '' : (r.preferita ? 'Sì' : ''), k ? '' : r.foto]))];
   scaricaFile((S.db.ricette || []).length ? `ricette-${todayISO()}.csv` : 'modello-ricette.csv',
@@ -225,6 +277,24 @@ function esportaCSV() {
 /* ---------- Azioni ---------- */
 const ricDi = id => (S.db.ricette || []).find(x => x.id === id);
 export const azioni = {
+  'rb-ing-add': () => { bozzaRic.ingredienti.push({ nome: '', g: '' }); app.render(); },
+  'rb-ing-del': el => { bozzaRic.ingredienti.splice(+el.dataset.i, 1); if (!bozzaRic.ingredienti.length) bozzaRic.ingredienti.push({ nome: '', g: '' }); app.render(); },
+  'rb-per': el => { bozzaRic.per = el.dataset.v; app.render(); },
+  'rb-salva': () => {
+    const b = bozzaRic, nome = b.nome.trim(), n = Math.max(1, Math.round(num(b.porzioni) || 1));
+    if (!nome) return toast('Scrivi il nome della ricetta');
+    const v = k => num(b[k]) || 0;
+    if (!v('kcal')) return toast('Scrivi le calorie');
+    const div = b.per === 'totale' ? n : 1;
+    const ingredienti = b.ingredienti.filter(i => i.nome.trim()).map(i => ({ nome: i.nome.trim(), g: num(i.g) || 0, kcal: 0, p: 0, c: 0, f: 0 }));
+    const vecchia = b._per ? ricDi(b._per) : null;
+    const r = { id: vecchia ? vecchia.id : 'mia-' + uid(), mia: true, nome, categoria: b.categoria, porzioni: n, prep: num(b.prep) || 0, cottura: num(b.cottura) || 0,
+      procedimento: b.procedimento.trim(), note: b.note.trim(), foto: /^https?:\/\//.test(b.foto.trim()) ? b.foto.trim() : '', preferita: !!b.preferita, ingredienti,
+      manuale: { kcal: v('kcal') / div, p: v('p') / div, c: v('c') / div, f: v('f') / div } };
+    S.db.ricette = S.db.ricette || [];
+    if (vecchia) S.db.ricette[S.db.ricette.indexOf(vecchia)] = r; else S.db.ricette.unshift(r);
+    bozzaRic = null; save(); toast(vecchia ? 'Ricetta aggiornata' : 'Ricetta salvata 🍳'); app.go('ricetta', r.id);
+  },
   'cu-tab': el => { tab = el.dataset.v; app.render(); },
   'cu-giorno': el => { const d = addDays(giorno || todayISO(), +el.dataset.d); giorno = d >= todayISO() ? null : d; app.render(); },
   'ric-cat': el => { cat = el.dataset.v; app.render(); },
@@ -273,14 +343,19 @@ export const azioni = {
   },
 };
 export function input(t) {
+  if (t.dataset.rb && bozzaRic) { bozzaRic[t.dataset.rb] = t.value; return true; }
+  if (t.dataset.rbIng != null && bozzaRic) { bozzaRic.ingredienti[+t.dataset.rbIng][t.dataset.k] = t.value; return true; }
   if (t.id === 'ric-cerca') { query = t.value; const l = document.getElementById('ric-lista'); if (l) l.innerHTML = ricLista(); return true; }
   if (t.id === 'pasto-cerca') { const v = t.value; aggiornaFoglio(foglioPasto(slotScelto, v)); const i = document.getElementById('pasto-cerca'); if (i) { i.focus(); i.setSelectionRange(v.length, v.length); } return true; }
   return false;
 }
 export function change(t) {
+  if (t.dataset.rbPref !== undefined && bozzaRic) { bozzaRic.preferita = t.checked; return true; }
+  if (t.dataset.rb === 'porzioni' && bozzaRic) { app.render(); return true; }
   if (t.dataset.spesa) { const x = S.db.spesa.find(s => s.id === t.dataset.spesa); if (x) { x.fatto = t.checked; save(); t.closest('.sp-riga')?.classList.toggle('fatto', t.checked); } return true; }
   return false;
 }
 export const setTabCucina = t => { tab = t; };
 /* Uscendo dalla ricetta le porzioni tornano quelle originali */
 export const esci = () => { porz = null; ultimaRic = null; };
+export const esciBozza = () => { bozzaRic = null; };

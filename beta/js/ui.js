@@ -75,7 +75,7 @@ export function segmenti(opzioni, valore, azione, extra = '') {
 export function stepper({ valore, azione, campo, passo, unita = '', label, extra = '' }) {
   return `<div class="stepper ${extra}"><span class="st-lab">${label}</span>
     <div class="st-row"><button class="st-btn" data-action="${azione}" data-campo="${campo}" data-d="-${passo}" aria-label="Diminuisci ${label}">${ico('meno', 22)}</button>
-    <input class="st-val" type="text" inputmode="decimal" data-campo-input="${campo}" value="${esc(valore)}" aria-label="${label}" autocomplete="off">
+    <input class="st-val" type="text" inputmode="decimal" data-campo-input="${campo}" value="${esc(valore)}" style="--ch:${Math.max(2, String(valore ?? '').length)}" aria-label="${label}" autocomplete="off">
     <button class="st-btn" data-action="${azione}" data-campo="${campo}" data-d="${passo}" aria-label="Aumenta ${label}">${ico('piu', 22)}</button></div>
     ${unita ? `<span class="st-unit">${unita}</span>` : ''}</div>`;
 }
