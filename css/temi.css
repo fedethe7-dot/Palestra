@@ -135,7 +135,6 @@
 :root[data-stile=atleta] .hero .chip { border-radius: 0; background: transparent; border: 1px solid rgba(255,255,255,.35); color: #fff; text-transform: uppercase; font-family: var(--font-label); letter-spacing: .06em; }
 :root[data-stile=atleta] .es-media { margin-inline: -16px; border-radius: 0; }
 :root[data-stile=atleta] .es-media::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, var(--bg)); }
-:root[data-stile=atleta] .es-testa { margin-top: -70px; position: relative; z-index: 1; }
 :root[data-stile=atleta] .seg { border-width: 0 0 1px; background: transparent; padding: 0; gap: 18px; overflow-x: auto; scrollbar-width: none; }
 :root[data-stile=atleta] .seg::-webkit-scrollbar { display: none; }
 :root[data-stile=atleta] .seg button { flex: none; border-radius: 0; padding: 6px 0 10px; font-family: var(--font-label); text-transform: uppercase; letter-spacing: .08em; }

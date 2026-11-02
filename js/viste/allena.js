@@ -65,7 +65,7 @@ function tabellaSerie(e, i) {
         ${campo('rir', s.rir == null ? '' : s.rir, '–', 'numeric', 'RIR')}
         <button class="s-ok ${s.done ? 'on' : ''}" data-action="set-done" data-ex="${i}" data-set="${j}" aria-label="${s.done ? 'Annulla serie' : 'Segna serie fatta'}" aria-pressed="${s.done}">${ico('check', 18)}</button></div>`; }).join('')}
   </div>
-  <p class="s-aiuto muted small">Tocca un numero per scriverlo. RIR = ripetizioni che avevi ancora (0-5).</p>`;
+`;
 }
 function editorSerie(e, i) {
   if (e.tipo === 'tempo') return setCorrente(e) < 0 ? '' : pannelloTempo(e);
@@ -92,14 +92,13 @@ function bloccoEsercizio(e, i) {
   const meta = [`${e.serie} × ${esc(e.rip)}${e.tipo === 'tempo' ? '″' : ''}`, e.recupero ? `recupero ${esc(e.recupero)}` : '', e.note ? esc(e.note) : ''].filter(Boolean).join(' · ');
   const warm = !e.sets.some(s => s.warm) && i === S.db.draft.exercises.findIndex(x => x.tipo === 'carico') ? riscaldamento(e, num(e.sets[0]?.kg)) : [];
   return `<article class="es">
-    <div class="es-media ${f0 ? '' : 'senza'}">${f0 ? `<img src="${f0}" alt="${esc(e.nome)}: posizione iniziale" class="f0"><img src="${f1}" alt="${esc(e.nome)}: posizione finale" class="f1">` : `<div class="es-mappa">${v ? mappaMuscoli(v.pri, v.sec) : ''}</div>`}
-      <button class="es-tecnica" data-action="tecnica" data-nome="${esc(e.nome)}">${ico('info', 16)} Tecnica</button></div>
-    <div class="es-testa"><h2>${esc(e.nome)}</h2><span class="es-mus">${muscoli}</span><span class="es-meta">${meta}</span></div>
+    <div class="es-testa"><div class="es-tt"><h2>${esc(e.nome)}</h2><span class="es-mus">${muscoli}</span><span class="es-meta">${meta}</span></div>
+      <button class="es-info" data-action="tecnica" data-nome="${esc(e.nome)}" aria-label="Tecnica, foto e muscoli di ${esc(e.nome)}">${ico('info', 20)}<span>Tecnica</span></button></div>
     ${e.coach?.testo ? `<div class="coach-tip ${e.coach.tipo}">${ico(e.coach.tipo === 'su' ? 'lampo' : e.coach.tipo === 'stallo' ? 'info' : 'progressi', 18)}<span>${esc(e.coach.testo)}</span></div>` : ''}
     ${warm.length ? `<button class="chip-btn" data-action="riscaldamento">${ico('fuoco', 16)} Aggiungi riscaldamento: ${warm.map(w => `${fmt(w.kg, 2)}×${w.reps}`).join(', ')}</button>` : ''}
     ${tabellaSerie(e, i)}
-    <div class="row-btns piccoli"><button class="btn small ghost" data-action="set-add">${ico('piu', 16)} Serie</button>
-      ${e.sets.filter(s => !s.done).length > 0 && e.sets.length > 1 ? `<button class="btn small ghost" data-action="set-del">${ico('meno', 16)} Serie</button>` : ''}
+    <div class="es-azioni"><button class="btn small ghost" data-action="set-add">${ico('piu', 16)} Serie</button>
+      <button class="btn small ghost" data-action="set-del" ${e.sets.filter(s => !s.done).length > 0 && e.sets.length > 1 ? '' : 'disabled'}>${ico('meno', 16)} Serie</button>
       <button class="btn small ghost" data-action="es-nota">${ico('nota', 16)} ${e.nota ? 'Nota ✓' : 'Nota'}</button>
       <button class="btn small ghost" data-action="es-scambia">${ico('scambia', 16)} Cambia</button></div>
     ${editorSerie(e, i)}</article>`;
@@ -131,8 +130,7 @@ export function viewAllena() {
     <div class="wk-tt"><b>Sessione ${esc(d.session)}</b><span><span data-elapsed>0 min</span> · ${cur < n ? `esercizio ${cur + 1} di ${n}` : 'riepilogo'}</span></div>
     <button class="icon-btn" data-action="strumenti" aria-label="Timer">${ico('cronometro')}</button>
     <button class="icon-btn" data-action="wk-lista" aria-label="Elenco esercizi e opzioni">${ico('lista')}</button></header>
-    <nav class="wk-prog" aria-label="Avanzamento">${d.exercises.map((e, k) => `<button class="${k === cur ? 'cur' : ''} ${exFatto(e) ? 'ok' : e.sets.some(s => s.done) ? 'mezzo' : ''}" data-action="wk-go" data-i="${k}" aria-label="${esc(e.nome)}"></button>`).join('')}
-    <button class="fine ${cur === n ? 'cur' : ''}" data-action="wk-go" data-i="${n}" aria-label="Riepilogo"></button></nav>`;
+`;
   if (cur < n) { const e = d.exercises[cur]; return `<div class="allena">${top}${bloccoEsercizio(e, cur)}</div>${dock(e, cur, n)}`; }
   return `<div class="allena">${top}${riepilogo()}</div>`;
 }

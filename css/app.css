@@ -184,12 +184,6 @@ body.in-allenamento #nav { display: none; }
 /* ---------- Allenamento ---------- */
 .wk-top { display: flex; align-items: center; gap: 8px; padding: 14px 0 10px; position: sticky; top: 0; z-index: 5; background: var(--bg-sticky, var(--bg)); -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2); margin-inline: -16px; padding-inline: 16px; padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
 .wk-tt { flex: 1; min-width: 0; display: flex; flex-direction: column; } .wk-tt b { font-family: var(--font-display); text-transform: var(--display-case); } .wk-tt span { font-size: .8rem; color: var(--muted); }
-.wk-prog { display: flex; gap: 5px; margin: 2px 0 14px; }
-.wk-prog button { flex: 1; height: 8px; padding: 0; border: 0; border-radius: 6px; background: var(--track); position: relative; }
-.wk-prog button::before { content: ''; position: absolute; inset: -14px 0; }
-.wk-prog button.ok { background: var(--good); } .wk-prog button.mezzo { background: var(--warn); }
-.wk-prog button.cur { background: var(--accent-grad, var(--accent)); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
-.wk-prog .fine { flex: .35; }
 .es { display: flex; flex-direction: column; gap: 12px; }
 .es-media { position: relative; height: var(--es-media-h, 168px); border-radius: var(--r); overflow: hidden; background: var(--media-bg); border: var(--card-border, 1px solid var(--line)); }
 .es-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 35%; filter: var(--foto-filter, none); }
@@ -200,22 +194,29 @@ body.in-allenamento #nav { display: none; }
 .es-mappa svg { max-height: 150px; }
 .es-tecnica { position: absolute; right: 10px; top: 10px; display: flex; align-items: center; gap: 5px; padding: 7px 11px; border-radius: var(--r-pill); border: 1px solid rgba(255,255,255,.3); background: rgba(10,12,20,.6); color: #fff; font-size: .78rem; font-weight: 700; backdrop-filter: blur(8px); min-height: 36px; }
 .es-media.senza .es-tecnica { position: static; justify-self: end; margin-top: 8px; background: var(--surface2); color: var(--text); border-color: var(--line); }
-.es-testa { display: flex; flex-direction: column; gap: 3px; }
-.es-testa h2 { font-size: var(--es-nome, 1.45rem); }
+.es-testa { display: flex; align-items: flex-start; gap: 10px; }
+.es-tt { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.es-info { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 10px; min-width: 64px; border-radius: var(--r-s); border: 1px solid var(--line-strong); background: var(--surface2); color: var(--text); font-size: .7rem; font-weight: 700; }
+.es-info .ico { color: var(--accent); }
+.es-azioni { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.es-azioni .btn { padding-inline: 4px; gap: 4px; font-size: .78rem; white-space: nowrap; min-width: 0; }
+.es-azioni .btn[disabled] { opacity: .35; }
+.es-testa h2 { font-size: min(var(--es-nome, 1.45rem), 1.75rem); line-height: 1.1; }
 .es-mus { font-size: .82rem; font-weight: 700; color: var(--accent-text); }
 .es-meta { font-size: .82rem; color: var(--muted); }
 .coach-tip.su { --coach-bg: var(--good-bg); --coach-line: var(--good-bg); --coach-ico: var(--good); }
 .coach-tip.stallo { --coach-bg: color-mix(in srgb, #f5a623 14%, transparent); --coach-line: color-mix(in srgb, #f5a623 40%, transparent); --coach-ico: #f5a623; }
 .serie { background: var(--surface); border: var(--card-border, 1px solid var(--line)); border-radius: var(--r); padding: 4px; box-shadow: var(--shadow); backdrop-filter: var(--blur); }
 .s-riga { display: grid; grid-template-columns: 40px minmax(0, 1.4fr) minmax(0, .9fr) 34px 46px; gap: 4px; align-items: center; min-height: 48px; padding: 0 4px; border-radius: calc(var(--r) - 6px); font-variant-numeric: tabular-nums; }
-.serie.con-kg .s-riga { grid-template-columns: 34px minmax(0, 1fr) 68px 50px 42px 44px; }
+.serie.con-kg .s-riga { grid-template-columns: 32px minmax(0, 1fr) 64px 46px 38px 44px; }
 .serie:not(.con-kg) .s-riga { grid-template-columns: 34px minmax(0, 1fr) 64px 42px 44px; }
-.s-prec { font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s-prec { font-size: .74rem; white-space: nowrap; overflow: hidden; text-overflow: clip; font-family: var(--font-body, inherit); letter-spacing: -.01em; }
 .s-in { width: 100%; min-width: 0; height: 40px; padding: 0 2px !important; text-align: center; border-radius: 10px; border: 1px solid var(--line-strong) !important; background: var(--surface2) !important; color: var(--text);
   font-family: var(--font-num); font-weight: 800; font-variant-numeric: tabular-nums; font-size: min(1.05rem, calc(60px / (var(--ch, 2) * .72))) !important; }
 .s-in::placeholder { color: var(--muted); font-weight: 600; opacity: .8; }
 .s-in:focus { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 2px var(--accent-soft); }
 .s-riga.fatta .s-in { background: transparent !important; border-color: transparent !important; }
+.s-riga.fatta .s-in::placeholder { color: transparent; }
 .s-riga.todo .s-in { color: var(--muted); }
 .s-aiuto { margin: 0; text-align: center; }
 #dischi-box:empty { display: none; }
@@ -527,3 +528,4 @@ body.in-allenamento #rest { display: none; }
   .serie.con-kg .s-riga { grid-template-columns: 28px minmax(0, 1fr) 58px 42px 36px 38px; gap: 3px; padding: 0 2px; }
   .s-prec { font-size: .7rem; letter-spacing: -.02em; } .s-ok { width: 36px; } .s-sel { width: 28px !important; height: 28px !important; font-size: .85rem; }
 }
+.allena .es { padding-top: 8px; }
