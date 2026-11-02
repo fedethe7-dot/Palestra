@@ -1,38 +1,6 @@
-<!DOCTYPE html>
-<html lang="it" data-stile="vetro" data-modo="scuro">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#060914">
-  <meta name="description" content="Il tuo personal trainer digitale: allenamenti, progressi e cucina fit">
-  <title>Palestra 6 (prova)</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon-192.png" type="image/png">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <script>
-    /* Applica subito stile e modo salvati, così non c'è il lampo di colori sbagliati all'apertura */
-    (function () {
-      try {
-        var k = /\/beta\/?/.test(location.pathname) ? 'palestra-dati-beta' : 'palestra-dati';
-        var s = (JSON.parse(localStorage.getItem(k) || 'null') || {}).settings || {};
-        var stile = s.stile || (s.accent ? (['aurora', 'natura'].indexOf(s.accent) >= 0 ? 'vetro' : 'essenziale') : 'vetro');
-        var modo = s.modo || ({ light: 'chiaro', dark: 'scuro' }[s.theme]) || 'auto';
-        var scuro = modo === 'scuro' || (modo === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.dataset.stile = stile;
-        document.documentElement.dataset.modo = scuro ? 'scuro' : 'chiaro';
-      } catch (e) {}
-    })();
-  </script>
-  <link rel="stylesheet" href="css/temi.css?v=6.1.1">
-  <link rel="stylesheet" href="css/app.css?v=6.1.1">
-</head>
-<body>
-  <main id="app" aria-live="polite"></main>
-  <nav id="nav" aria-label="Navigazione principale"></nav>
-  <input type="file" id="file" hidden>
-  <noscript><p style="padding:20px">Per usare Palestra attiva JavaScript.</p></noscript>
-  <script type="module" src="js/app.js?v=6.1.1"></script>
-</body>
-</html>
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Palestra</title><meta http-equiv="refresh" content="2;url=../">
+<style>body{font-family:system-ui,sans-serif;background:#0e1014;color:#eef;display:grid;place-items:center;min-height:100vh;margin:0;padding:16px;text-align:center}a{color:#8ab4ff}</style></head>
+<body><div><h1>La versione di prova è finita</h1><p>Ora tutto è nell'app normale. Ti porto lì…</p><p><a href="../">Apri Palestra</a></p></div>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>{if(r.scope.includes('/beta/'))r.unregister()}));
+if(window.caches)caches.keys().then(k=>k.filter(x=>x.startsWith('palestra-beta')).forEach(x=>caches.delete(x)));</script></body></html>

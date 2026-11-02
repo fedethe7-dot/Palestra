@@ -156,5 +156,51 @@ export async function aggiornaTutto() {
   await flush();
   const ultima = cfg().lastRead ? Date.now() - new Date(cfg().lastRead) : Infinity;
   if (ultima > 10 * 60 * 1000 && navigator.onLine && cfg().syncUrl) scaricaDalFoglio(true);
+  backupAutomatico();
 }
 export { bodyKg };
+
+/* ---------- Backup completo nel foglio (script "Palestra Backup") ----------
+   Uno script a parte, così quello degli allenamenti resta com'è.
+   POST { type:'ping' } → { ok, funzioni:['backup'] }   POST { type:'backup', dati, quando } → { ok, backup:true }
+   GET ?azione=backup&token=... → { ok, dati, quando } */
+const OGNI_GIORNI = 7;
+const urlBackup = () => (cfg().backupUrl || '').trim();
+async function chiamaBackup(item) {
+  const res = await fetch(urlBackup(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ ...item, token: (cfg().syncToken || '').trim() }) });
+  const r = await res.json();
+  if (!r.ok) throw new Error(r.error || 'Errore sconosciuto');
+  return r;
+}
+export const copiaPerBackup = () => { const { draft, outbox, ...resto } = S.db; return resto; };
+export async function backupNelFoglio(manuale = false) {
+  if (!urlBackup()) { if (manuale) toast('Incolla prima il link dello script di backup'); return false; }
+  if (BETA || !navigator.onLine) { if (manuale) toast('Sei offline: riprova con internet'); return false; }
+  if (manuale) toast('☁️ Backup in corso...');
+  try {
+    const p = await chiamaBackup({ type: 'ping' });
+    if (!(p.funzioni || []).includes('backup')) throw new Error('Questo link non è lo script di backup');
+    await chiamaBackup({ type: 'backup', quando: new Date().toISOString(), dati: JSON.stringify(copiaPerBackup()) });
+    cfg().ultimoBackup = new Date().toISOString(); cfg().backupErrore = ''; save();
+    if (manuale) toast('✅ Backup salvato nel foglio');
+    return true;
+  } catch (e) {
+    cfg().backupErrore = String(e.message || e); save();
+    if (manuale) toast(`⚠️ ${cfg().backupErrore}`);
+    return false;
+  } finally { app.renderSafe(); }
+}
+/* All'apertura: se l'ultimo backup ha più di 7 giorni lo rifà da solo */
+export function backupAutomatico() {
+  if (!urlBackup()) return;
+  const u = cfg().ultimoBackup ? new Date(cfg().ultimoBackup).getTime() : 0;
+  if (Date.now() - u > OGNI_GIORNI * 86400000) backupNelFoglio(false);
+}
+export async function leggiBackup() {
+  const res = await fetch(`${urlBackup()}?azione=backup&token=${encodeURIComponent((cfg().syncToken || '').trim())}`);
+  const r = await res.json();
+  if (!r.ok) throw new Error(r.error || 'Errore sconosciuto');
+  if (!r.dati) throw new Error('Nel foglio non c\'è ancora nessun backup');
+  return { dati: JSON.parse(r.dati), quando: r.quando };
+}

@@ -101,7 +101,7 @@ function bloccoEsercizio(e, i) {
     <div class="es-media ${f0 ? '' : 'senza'}">${f0 ? `<img src="${f0}" alt="${esc(e.nome)}: posizione iniziale" class="f0"><img src="${f1}" alt="${esc(e.nome)}: posizione finale" class="f1">` : `<div class="es-mappa">${v ? mappaMuscoli(v.pri, v.sec) : ''}</div>`}
       <button class="es-tecnica" data-action="tecnica" data-nome="${esc(e.nome)}">${ico('info', 16)} Tecnica</button></div>
     <div class="es-testa"><h2>${esc(e.nome)}</h2><span class="es-mus">${muscoli}</span><span class="es-meta">${meta}</span></div>
-    ${e.coach?.testo ? `<div class="coach-tip ${e.coach.tipo}">${ico(e.coach.tipo === 'su' ? 'lampo' : 'progressi', 18)}<span>${esc(e.coach.testo)}</span></div>` : ''}
+    ${e.coach?.testo ? `<div class="coach-tip ${e.coach.tipo}">${ico(e.coach.tipo === 'su' ? 'lampo' : e.coach.tipo === 'stallo' ? 'info' : 'progressi', 18)}<span>${esc(e.coach.testo)}</span></div>` : ''}
     ${warm.length ? `<button class="chip-btn" data-action="riscaldamento">${ico('fuoco', 16)} Aggiungi riscaldamento: ${warm.map(w => `${fmt(w.kg, 2)}×${w.reps}`).join(', ')}</button>` : ''}
     ${tabellaSerie(e, i)}
     <div class="row-btns piccoli"><button class="btn small ghost" data-action="set-add">${ico('piu', 16)} Serie</button>
@@ -134,7 +134,7 @@ export function viewAllena() {
   document.body.dataset.restInline = '1';
   const top = `<header class="wk-top"><button class="icon-btn" data-action="go" data-view="oggi" aria-label="Torna a Oggi (l'allenamento resta aperto)">${ico('giu')}</button>
     <div class="wk-tt"><b>Sessione ${esc(d.session)}</b><span><span data-elapsed>0 min</span> · ${cur < n ? `esercizio ${cur + 1} di ${n}` : 'riepilogo'}</span></div>
-    <button class="icon-btn" data-action="strumenti" aria-label="Cronometro e timer">${ico('cronometro')}</button>
+    <button class="icon-btn" data-action="strumenti" aria-label="Timer">${ico('cronometro')}</button>
     <button class="icon-btn" data-action="wk-lista" aria-label="Elenco esercizi e opzioni">${ico('lista')}</button></header>
     <nav class="wk-prog" aria-label="Avanzamento">${d.exercises.map((e, k) => `<button class="${k === cur ? 'cur' : ''} ${exFatto(e) ? 'ok' : e.sets.some(s => s.done) ? 'mezzo' : ''}" data-action="wk-go" data-i="${k}" aria-label="${esc(e.nome)}"></button>`).join('')}
     <button class="fine ${cur === n ? 'cur' : ''}" data-action="wk-go" data-i="${n}" aria-label="Riepilogo"></button></nav>`;

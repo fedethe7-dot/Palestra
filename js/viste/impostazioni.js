@@ -5,7 +5,7 @@ import { S, save, cfg, attrezzatura, migra, carica, KEY, VERSIONE, BETA, SEZIONI
 import { esc, fmt, num, toast, chiedi, todayISO, scaricaFile, fmtDateLong, clamp, uid, parseCSV, normDate } from '../util.js';
 import { testata, ico, app, segmenti, interruttore } from '../ui.js';
 import { applicaTema, STILI, ACCENTI } from '../tema.js';
-import { testSync, syncNow, scaricaDalFoglio } from '../sync.js';
+import { testSync, syncNow, scaricaDalFoglio, backupNelFoglio, leggiBackup } from '../sync.js';
 import { dischiBilanciere } from '../coach.js';
 import { chiediNotifiche, beep, sbloccaAudio } from '../timer.js';
 import { libDi } from '../libreria.js';
@@ -121,7 +121,12 @@ function foglio() {
     <p class="small">${stato}<br><span class="muted">In coda: ${S.db.outbox.length} · Allenamenti da inviare: ${nonSync}${s.lastRead ? ` · Ultima lettura: ${new Date(s.lastRead).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}</span></p>
     <div class="row-btns"><button class="btn full" data-action="sync-test">Prova collegamento</button></div>
     <div class="row-btns"><button class="btn primary full" data-action="sync-invia">${ico('carica', 18)} Invia</button><button class="btn full" data-action="sync-leggi">${ico('scarica', 18)} Scarica</button></div>
-    <p class="muted small">All'apertura l'app invia da sola quello che è in coda e rilegge il foglio (al massimo ogni 10 minuti).</p></section>`;
+    <p class="muted small">All'apertura l'app invia da sola quello che è in coda e rilegge il foglio (al massimo ogni 10 minuti).</p></section>
+    <section class="card form"><h3>Backup completo nel foglio</h3>
+      <p class="muted small">Salva nel foglio tutto quello che c'è nell'app: allenamenti con il RIR, ricette tue, pasti, misure, impostazioni. Si fa da solo una volta a settimana. Le foto dei progressi restano solo nel telefono.</p>
+      <label class="campo"><span>Link dello script di backup (finisce con /exec)</span><input data-setting="backupUrl" value="${esc(s.backupUrl || '')}" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off"></label>
+      <p class="small">${!s.backupUrl ? 'Non collegato: segui la guida "Script di backup" nel file LEGGIMI del progetto.' : s.backupErrore ? `<span class="giu">Errore: ${esc(s.backupErrore)}</span>` : s.ultimoBackup ? `Ultimo backup: ${new Date(s.ultimoBackup).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'Collegato, nessun backup ancora'}</p>
+      <div class="row-btns"><button class="btn primary full" data-action="backup-foglio">${ico('carica', 18)} Fai il backup adesso</button><button class="btn full" data-action="backup-foglio-leggi">${ico('scarica', 18)} Ripristina</button></div></section>`;
 }
 
 function dati() {
@@ -189,6 +194,17 @@ export const azioni = {
   'sync-test': () => testSync(), 'sync-invia': () => syncNow(), 'sync-leggi': () => scaricaDalFoglio(),
   'backup-esporta': () => scaricaFile(`palestra-backup-${todayISO()}.json`, JSON.stringify(S.db, null, 2), 'application/json'),
   'backup-importa': () => app.pickFile('json'),
+  'backup-foglio': () => backupNelFoglio(true),
+  'backup-foglio-leggi': async () => {
+    if (!(cfg().backupUrl || '').trim()) return toast('Incolla prima il link dello script di backup');
+    let b; try { toast('⬇️ Leggo il backup...'); b = await leggiBackup(); } catch (e) { return toast(`⚠️ ${e.message || e}`); }
+    const quando = b.quando ? new Date(b.quando).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+    if (!(await chiedi({ titolo: 'Ripristinare il backup del foglio?', testo: `Backup del ${quando} con ${(b.dati.workouts || []).length} allenamenti. I dati attuali verranno sostituiti (l'allenamento in corso resta).`, ok: 'Ripristina', pericolo: true }))) return;
+    const draft = S.db.draft, outbox = S.db.outbox, url = cfg().backupUrl, sync = cfg().syncUrl, tok = cfg().syncToken;
+    S.db = migra(b.dati); S.db.draft = draft; S.db.outbox = outbox || [];
+    Object.assign(S.db.settings, { backupUrl: url, syncUrl: sync || S.db.settings.syncUrl, syncToken: tok || S.db.settings.syncToken });
+    save(); applicaTema(); app.render(); toast('Backup ripristinato dal foglio');
+  },
   'csv-importa': () => app.pickFile('csv'),
   'reset-tutto': async () => {
     if (await chiedi({ titolo: 'Cancellare TUTTI i dati?', testo: 'Fai prima un backup. Non si può annullare.', ok: 'Cancella tutto', pericolo: true })

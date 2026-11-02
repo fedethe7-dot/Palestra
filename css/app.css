@@ -205,6 +205,7 @@ body.in-allenamento #nav { display: none; }
 .es-mus { font-size: .82rem; font-weight: 700; color: var(--accent-text); }
 .es-meta { font-size: .82rem; color: var(--muted); }
 .coach-tip.su { --coach-bg: var(--good-bg); --coach-line: var(--good-bg); --coach-ico: var(--good); }
+.coach-tip.stallo { --coach-bg: color-mix(in srgb, #f5a623 14%, transparent); --coach-line: color-mix(in srgb, #f5a623 40%, transparent); --coach-ico: #f5a623; }
 .serie { background: var(--surface); border: var(--card-border, 1px solid var(--line)); border-radius: var(--r); padding: 4px; box-shadow: var(--shadow); backdrop-filter: var(--blur); }
 .s-riga { display: grid; grid-template-columns: 40px minmax(0, 1.4fr) minmax(0, .9fr) 34px 46px; gap: 4px; align-items: center; min-height: 48px; padding: 0 4px; border-radius: calc(var(--r) - 6px); font-variant-numeric: tabular-nums; }
 .serie.con-kg .s-riga { grid-template-columns: 40px minmax(0, 1.25fr) minmax(0, .8fr) minmax(0, .7fr) 34px 46px; }
@@ -475,13 +476,17 @@ body.in-allenamento #rest { display: none; }
 #print { display: none; }
 @media print {
   body.printing > *:not(#print) { display: none !important; }
-  body.printing { background: #fff; color: #000; padding: 0; }
+  html, body.printing { background: #fff !important; } body.printing { color: #000; padding: 0; } body.printing::before { display: none !important; }
   body.printing #print { display: block; font-family: Arial, sans-serif; color: #000; }
   #print .p-head { display: flex; justify-content: space-between; border-bottom: 2px solid #000; margin-bottom: 12px; }
   #print table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 14px; } #print th, #print td { border: 1px solid #999; padding: 4px; text-align: left; vertical-align: top; }
   #print .c { text-align: center; } #print .pos { color: #087a2f; } #print .neg { color: #b00; }
   #print .p-kpi { display: flex; gap: 10px; margin: 10px 0; } #print .p-kpi div { flex: 1; border: 1px solid #999; padding: 6px; text-align: center; font-size: 11px; } #print .p-kpi b { display: block; font-size: 16px; }
-  #print h2 { font-size: 14px; margin: 10px 0 6px; } #print .p-foot { font-size: 10px; color: #555; }
+  #print h2 { font-size: 14px; margin: 14px 0 6px; } #print .p-foot { font-size: 9px; color: #555; margin-top: 10px; }
+  #print .p-kpi small { display: block; color: #555; font-size: 10px; margin-top: 2px; }
+  #print .p-graf { width: 100%; height: auto; } #print .p-nota { font-size: 10px; color: #444; margin: 4px 0; } #print .p-dati { font-size: 11px; margin: 0 0 6px; }
+  #print table.p-stretta { width: 60%; } #print .p-note { border: 1px solid #999; height: 90px; }
+  #print h2, #print table, #print .p-graf { break-inside: avoid; } @page { margin: 12mm; }
 }
 
 /* ---------- Animazioni ridotte ---------- */
@@ -489,3 +494,19 @@ body.in-allenamento #rest { display: none; }
 :root[data-anim=nessuna] *, :root[data-anim=nessuna] *::before, :root[data-anim=nessuna] *::after { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } .es-media .f1, .vfoto .fine { opacity: 0; } }
 @media (min-width: 600px) { body { padding-bottom: 110px; } }
+
+/* Resoconto della settimana */
+.res-righe { display: flex; flex-direction: column; }
+.res-r { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "l v" "l s"; column-gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.res-r:last-child { border-bottom: 0; }
+.res-r span { grid-area: l; align-self: center; color: var(--muted); font-size: .88rem; }
+.res-r b { grid-area: v; text-align: right; font-family: var(--font-num); }
+.res-r small { grid-area: s; text-align: right; font-size: .75rem; color: var(--muted); }
+.res-r small.su { color: var(--good); } .res-r small.giu { color: var(--bad, #e5484d); }
+
+/* Codice a barre */
+.cb-video { position: relative; border-radius: var(--r); overflow: hidden; }
+.cb-video video { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #000; }
+.cb-mirino { position: absolute; left: 12%; right: 12%; top: 38%; height: 24%; border: 2px solid var(--accent); border-radius: 10px; box-shadow: 0 0 0 999px rgba(0,0,0,.35); pointer-events: none; }
+.cb-prod { display: flex; flex-direction: column; gap: 2px; } .cb-prod b { font-size: 1.1rem; } .cb-prod small { color: var(--muted); }
+.cb-stato { padding: 8px 10px; border-radius: var(--r-s); background: var(--surface2); }

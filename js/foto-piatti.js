@@ -37,7 +37,8 @@ const REGOLE = [
   [/patatine/i, 'Papas_fritas_(plato).jpg'],
   [/popcorn/i, 'Popcorn.jpg'],
 ];
-const fileDi = r => (REGOLE.find(([re]) => re.test(r.nome)) || [])[1];
+// Le ricette fatte da te non prendono foto automatiche: solo la tua, se l'hai messa
+const fileDi = r => r.mia ? undefined : (REGOLE.find(([re]) => re.test(r.nome)) || [])[1];
 export function fotoPiatto(r, larghezza = 640) {
   const f = fileDi(r);
   return f ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=${larghezza}` : '';

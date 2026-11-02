@@ -5,6 +5,7 @@ import { S, save, cfg, obiettiviGiorno } from '../dati.js';
 import { esc, fmt, num, todayISO, toast, chiedi, uid, parseCSV, scaricaFile, slug, addDays, fmtDateLong } from '../util.js';
 import { testata, ico, app, apriFoglio, chiudiFoglio, aggiornaFoglio, segmenti, vuoto } from '../ui.js';
 import { fotoPiatto, creditoFoto, paginaFoto } from '../foto-piatti.js';
+import { foglioCodice } from '../cibo.js';
 import { timerLibero, ST } from '../timer.js';
 
 export const CATEGORIE = [
@@ -168,7 +169,9 @@ export function viewRicettaNuova() {
       ${b.ingredienti.map((i, k) => `<div class="ing-edit"><input data-rb-ing="${k}" data-k="nome" value="${esc(i.nome)}" placeholder="Ingrediente" aria-label="Ingrediente ${k + 1}">
         <input data-rb-ing="${k}" data-k="g" value="${esc(i.g)}" inputmode="decimal" placeholder="g" aria-label="Grammi ingrediente ${k + 1}">
         <button class="icon-btn small" data-action="rb-ing-del" data-i="${k}" aria-label="Togli ingrediente">${ico('chiudi', 16)}</button></div>`).join('')}
-      <button class="btn small ghost" data-action="rb-ing-add">${ico('piu', 16)} Ingrediente</button></section>
+      <div class="row-btns"><button class="btn small ghost" data-action="rb-ing-add">${ico('piu', 16)} Ingrediente</button>
+        <button class="btn small ghost" data-action="rb-ing-codice">${ico('codice', 16)} Con codice a barre</button></div>
+      <p class="muted small">Con il codice a barre aggiungo l'ingrediente e sommo da solo le sue calorie e i macro ai valori qui sotto.</p></section>
     <section class="card form"><h3>Valori nutrizionali</h3>
       ${segmenti([['porzione', 'Per porzione'], ['totale', 'Ricetta intera']], b.per, 'rb-per', 'piccolo')}
       <div class="due"><label class="campo"><span>Calorie (kcal)</span><input data-rb="kcal" inputmode="decimal" value="${esc(b.kcal)}" placeholder="es. 650"></label>
@@ -201,6 +204,7 @@ function foglioPasto(slot, filtro = '') {
   const ric = (S.db.ricette || []).filter(r => !q || r.nome.toLowerCase().includes(q)).slice(0, 40);
   const pia = (S.db.piatti || []).filter(p => !q || p.nome.toLowerCase().includes(q));
   return `${segmenti(PASTI, slot, 'pasto-slot', 'piccolo')}
+    <button class="btn full" data-action="cb-diario">${ico('codice', 18)} Prodotto con codice a barre</button>
     <div class="cerca-box">${ico('cerca', 18)}<input id="pasto-cerca" type="search" placeholder="Cerca ricetta o piatto" value="${esc(filtro)}"></div>
     ${pia.length ? `<h4>Piatti salvati</h4>${pia.map(p => `<button class="ric-riga" data-action="pasto-piatto" data-id="${esc(p.id)}"><span><b>${esc(p.nome)}</b><small>${fmt(p.kcal)} kcal · ${fmt(p.p)} g prot.</small></span>${ico('piu', 18)}</button>`).join('')}` : ''}
     <h4>Ricette (1 porzione)</h4>${ric.map(r => { const m = ricMacro(r).por; return `<button class="ric-riga" data-action="pasto-ricetta" data-id="${esc(r.id)}">${miniFoto(r)}<span><b>${esc(r.nome)}</b><small>${fmt(m.kcal)} kcal · ${fmt(m.p)} g prot.</small></span>${ico('piu', 18)}</button>`; }).join('')}
@@ -279,6 +283,18 @@ const ricDi = id => (S.db.ricette || []).find(x => x.id === id);
 export const azioni = {
   'rb-ing-add': () => { bozzaRic.ingredienti.push({ nome: '', g: '' }); app.render(); },
   'rb-ing-del': el => { bozzaRic.ingredienti.splice(+el.dataset.i, 1); if (!bozzaRic.ingredienti.length) bozzaRic.ingredienti.push({ nome: '', g: '' }); app.render(); },
+  'cb-diario': () => { const slot = slotScelto; foglioCodice(x => { slotScelto = slot; aggiungiPasto({ tipo: 'prodotto', ref: x.codice, nome: `${x.nome} (${fmt(x.g)} g)`, porz: 1, kcal: x.kcal, p: x.p, c: x.c, f: x.f }); }, 'Aggiungi al diario'); },
+  'rb-ing-codice': () => foglioCodice(x => {
+    const b = bozzaRic; if (!b) return;
+    const vuota = b.ingredienti.findIndex(i => !String(i.nome).trim());
+    const riga = { nome: x.nome, g: String(Math.round(x.g * 10) / 10) };
+    if (vuota >= 0) b.ingredienti[vuota] = riga; else b.ingredienti.push(riga);
+    const campi = ['kcal', 'p', 'c', 'f'];
+    if (campi.every(k => !num(b[k]))) b.per = 'totale';
+    const div = b.per === 'totale' ? 1 : Math.max(1, num(b.porzioni) || 1);
+    campi.forEach(k => { b[k] = String(Math.round(((num(b[k]) || 0) + x[k] / div) * 10) / 10); });
+    chiudiFoglio(); app.render(); toast(`Aggiunto ${x.nome}: valori sommati`);
+  }, 'Aggiungi alla ricetta'),
   'rb-per': el => { bozzaRic.per = el.dataset.v; app.render(); },
   'rb-salva': () => {
     const b = bozzaRic, nome = b.nome.trim(), n = Math.max(1, Math.round(num(b.porzioni) || 1));
@@ -311,7 +327,7 @@ export const azioni = {
   'ric-modello': () => esportaCSV(),
   'ric-cucina': () => { const r = ricDi(S.param); passo = 0; if (!passiDi(r.procedimento).length) return toast('Questa ricetta non ha il procedimento'); apriFoglio(foglioPasso(r), { titolo: esc(r.nome), cls: 'alto' }); },
   'cu-passo': el => { const r = ricDi(S.param); passo = Math.max(0, Math.min(passiDi(r.procedimento).length - 1, passo + (+el.dataset.d))); aggiornaFoglio(foglioPasso(r)); },
-  'cu-timer': el => { timerLibero('azzera'); timerLibero('dur', +el.dataset.min * 60); timerLibero('via'); toast(`Timer di ${el.dataset.min} minuti partito`); import('./strumenti.js').then(m => m.foglioStrumenti('timer')); },
+  'cu-timer': el => { timerLibero('azzera'); timerLibero('dur', +el.dataset.min * 60); timerLibero('via'); toast(`Timer di ${el.dataset.min} minuti partito`); import('./strumenti.js').then(m => m.foglioStrumenti()); },
   'ric-diario': el => { const r = ricDi(el.dataset.id), n = porz || 1, m = ricMacro(r).por; slotScelto = /colazion/i.test(r.categoria) ? 'colazione' : /spuntin|dolci/i.test(r.categoria) ? 'spuntino' : new Date().getHours() < 16 ? 'pranzo' : 'cena';
     giorno = null; aggiungiPasto({ tipo: 'ricetta', ref: r.id, nome: r.nome, porz: n, kcal: m.kcal * n, p: m.p * n, c: m.c * n, f: m.f * n }); },
   'ric-spesa': el => {

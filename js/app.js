@@ -14,6 +14,7 @@ import * as Progressi from './viste/progressi.js';
 import * as Cucina from './viste/cucina.js';
 import * as Imp from './viste/impostazioni.js';
 import * as Strumenti from './viste/strumenti.js';
+import * as Cibo from './cibo.js';
 
 const VISTE = {
   oggi: Oggi.viewOggi, allena: Allena.viewAllena,
@@ -22,7 +23,7 @@ const VISTE = {
   progressi: Progressi.viewProgressi, cucina: Cucina.viewCucina, ricetta: Cucina.viewRicetta, 'ricetta-nuova': Cucina.viewRicettaNuova, impostazioni: Imp.viewImpostazioni,
 };
 const TAB = { modifica: 'schede', libreria: 'schede', esercizio: 'schede', 'crea-esercizio': 'schede', storico: 'schede', 'nuova-scheda': 'schede', ricetta: 'cucina', 'ricetta-nuova': 'cucina', allena: 'allenati' };
-const MODULI = [Allena, Schede, Progressi, Cucina, Imp, Oggi, Strumenti];
+const MODULI = [Allena, Schede, Progressi, Cucina, Imp, Oggi, Strumenti, Cibo];
 const AZIONI = Object.assign({}, ...MODULI.map(m => m.azioni || {}));
 
 /* ---------- Barra di navigazione ---------- */

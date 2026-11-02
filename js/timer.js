@@ -3,7 +3,7 @@
    se cambi schermata o se riapri l'app.
    - Recupero: parte da solo quando segni una serie (S.db.draft.rest)
    - Esercizi a tempo (plank & co.): conto 3-2-1, poi conto alla rovescia (S.db.draft.work)
-   - Strumenti: cronometro e timer libero, usabili anche senza allenamento */
+   - Strumenti: timer libero, usabile anche senza allenamento */
 import { S, save, cfg, riallineaTempo } from './dati.js';
 import { $, mmss, vibra, toast, num, restSec, clamp } from './util.js';
 import { ico, app } from './ui.js';
@@ -196,21 +196,12 @@ function drawElapsed() {
   els.forEach(el => el.textContent = m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`);
 }
 
-/* ---------- Strumenti: cronometro e timer libero (in memoria + localStorage) ---------- */
+/* ---------- Strumenti: timer libero (in memoria + localStorage) ---------- */
 const KS = 'palestra-strumenti';
 export const ST = (() => { try { return JSON.parse(localStorage.getItem(KS)) || {}; } catch (e) { return {}; } })();
-ST.crono ||= { start: 0, acc: 0, giri: [] };
+delete ST.crono; // il cronometro con i giri è stato tolto
 ST.timer ||= { dur: 60, endAt: 0, left: 0 };
 const salvaST = () => { try { localStorage.setItem(KS, JSON.stringify(ST)); } catch (e) {} };
-export const cronoMs = () => ST.crono.acc + (ST.crono.start ? Date.now() - ST.crono.start : 0);
-export function crono(azione) {
-  const c = ST.crono;
-  if (azione === 'via') { if (!c.start) c.start = Date.now(); }
-  else if (azione === 'pausa') { if (c.start) { c.acc += Date.now() - c.start; c.start = 0; } }
-  else if (azione === 'giro') { c.giri.unshift(cronoMs()); c.giri = c.giri.slice(0, 20); }
-  else if (azione === 'azzera') { c.start = 0; c.acc = 0; c.giri = []; }
-  salvaST();
-}
 export function timerLibero(azione, val) {
   const t = ST.timer;
   if (azione === 'dur') { if (!t.endAt) { t.dur = clamp(val, 5, 3600); t.left = 0; } }
@@ -219,10 +210,7 @@ export function timerLibero(azione, val) {
   else if (azione === 'azzera') { t.endAt = 0; t.left = 0; }
   salvaST();
 }
-const fmtCrono = ms => { const cs = Math.floor(ms / 10) % 100, s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}.${String(cs).padStart(2, '0')}`; };
-export { fmtCrono };
 function drawStrumenti() {
-  const c = document.querySelector('[data-crono]'); if (c) c.textContent = fmtCrono(cronoMs());
   const t = ST.timer;
   if (t.endAt && t.endAt <= Date.now()) {
     t.endAt = 0; t.left = 0; salvaST(); vib([400, 150, 400]); beep(1046, 0.25, 3); notifica('Timer finito', ''); toast('⏰ Timer finito!');

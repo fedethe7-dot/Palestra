@@ -7,9 +7,10 @@ import { testata, ico, app, segmenti, vuoto, apriFoglio, chiudiFoglio } from '..
 import { lineChart, barChart, barreH, heatmap } from '../grafici.js';
 import { seriePerGruppo } from '../coach.js';
 import { queue } from '../sync.js';
-import { stampaRiepilogo, stampaStorico } from '../stampa.js';
+import { stampaDimagrimento } from '../stampa.js';
 import { fotoTutte, fotoSalva, fotoElimina, fotoUrl } from '../foto.js';
 
+const PERIODI_TXT = { 30: 'ultimo mese', 90: 'ultimi 3 mesi', 180: 'ultimi 6 mesi', 365: 'ultimo anno' };
 let tab = 'forza', period = 90, chartEx = null, metrica = 'e1rm', confronto = { a: null, b: null, pos: 50 };
 const PERIODI = [[30, '1 mese'], [90, '3 mesi'], [180, '6 mesi'], [365, '1 anno'], [0, 'Tutto']];
 export const setTab = t => { tab = t; };
@@ -34,8 +35,7 @@ function forza() {
     ${segmenti([['e1rm', '1RM'], ['max', 'Max'], ['vol', 'Volume'], ['rip', 'Rip.']], metrica, 'prog-metrica', 'piccolo')}
     <p class="muted small">Il massimale stimato (1RM) unisce peso e ripetizioni: sale anche quando fai più ripetizioni con lo stesso peso.</p></section>
     <section class="card"><div class="row"><h3>Record personali</h3>${ico('trofeo', 20)}</div>
-      ${rec.length ? `<div class="lista-rec">${rec.map(([n, r]) => `<button class="rec-riga" data-action="go" data-view="esercizio" data-p="${esc(n)}"><span><b>${esc(n)}</b><small>${fmtDateLong(r.date)}</small></span><b class="rec-val">${fmt(r.kg, 2)} × ${r.reps}</b></button>`).join('')}</div>` : vuoto('Ancora nessun record')}</section>
-    <button class="btn full" data-action="stampa-storico">${ico('stampa', 18)} Stampa lo storico di ${esc(chartEx)}</button>`;
+      ${rec.length ? `<div class="lista-rec">${rec.map(([n, r]) => `<button class="rec-riga" data-action="go" data-view="esercizio" data-p="${esc(n)}"><span><b>${esc(n)}</b><small>${fmtDateLong(r.date)}</small></span><b class="rec-val">${fmt(r.kg, 2)} × ${r.reps}</b></button>`).join('')}</div>` : vuoto('Ancora nessun record')}</section>`;
 }
 
 /* ---------- Volume e frequenza ---------- */
@@ -64,7 +64,7 @@ function volume() {
     <section class="card"><div class="row"><h3>Frequenza</h3><span class="muted small">${streakWeeks()} settimane di fila</span></div>
       ${heatmap(giorni, g => date.has(g.x) ? 3 : g.x > todayISO() ? 'f' : 0, 16)}
       <div class="heat-leg"><span>16 settimane fa</span><span>oggi</span></div></section>
-    <button class="btn full" data-action="stampa-riepilogo">${ico('stampa', 18)} Stampa il riepilogo del periodo</button>`;
+    <button class="btn full" data-action="resoconto-apri">${ico('calendario', 18)} Resoconto della settimana scorsa</button>`;
 }
 
 /* ---------- Corpo ---------- */
@@ -98,7 +98,10 @@ function corpo() {
     <section class="card"><div class="row"><h3>Misure (cm)</h3><button class="btn small" data-action="mis-nuova">${ico('piu', 16)} Nuove misure</button></div>
       ${mis.length ? `<div class="tab-mis" role="table"><div class="tm-r tm-h" role="row"><span></span><span>${fmtDate(primaM.date)}</span><span>${fmtDate(ultM.date)}</span><span>Δ</span></div>
         ${MIS.map(([k, l]) => { const a = num(primaM[k]), b = num(ultM[k]); return a == null && b == null ? '' : `<div class="tm-r" role="row"><span>${l}</span><span>${fmt(a, 1)}</span><b>${fmt(b, 1)}</b><span class="${b - a > 0 ? 'su' : b - a < 0 ? 'giu' : ''}">${a != null && b != null ? (b - a > 0 ? '+' : '') + fmt(b - a, 1) : ''}</span></div>`; }).join('')}</div>`
-        : '<p class="muted small">Vita, petto, braccio, coscia e fianchi: misurali una volta al mese, sempre nello stesso punto.</p>'}</section>`;
+        : '<p class="muted small">Vita, petto, braccio, coscia e fianchi: misurali una volta al mese, sempre nello stesso punto.</p>'}</section>
+    <section class="card"><div class="row"><h3>Resoconto da stampare</h3>${ico('stampa', 20)}</div>
+      <p class="muted small">Peso, massa grassa, calorie basali, fabbisogno, misure e andamento settimana per settimana (${period ? PERIODI_TXT[period] || 'periodo scelto' : 'tutto lo storico'}). Utile da portare al nutrizionista o al medico per il piano di dimagrimento: dalla stampa puoi anche salvarlo in PDF.</p>
+      <button class="btn primary full" data-action="stampa-dimagrimento">${ico('stampa', 18)} Crea il resoconto</button></section>`;
 }
 
 /* ---------- Foto ---------- */
@@ -171,8 +174,7 @@ export const azioni = {
     S.db.misure = (S.db.misure || []).filter(x => x.date !== date); S.db.misure.push(m); save(); chiudiFoglio(); app.render(); toast('Misure salvate');
   },
   'foto-del': async el => { if (await chiedi({ titolo: 'Eliminare la foto?', ok: 'Elimina', pericolo: true })) { await fotoElimina(el.dataset.id); fotoCache = null; confronto = { a: null, b: null, pos: 50 }; app.render(); } },
-  'stampa-riepilogo': () => stampaRiepilogo(period),
-  'stampa-storico': () => stampaStorico(chartEx),
+  'stampa-dimagrimento': () => stampaDimagrimento(period),
 };
 export function input(t) {
   if (t.id === 'cf-range') { confronto.pos = +t.value; t.closest('.confronto')?.style.setProperty('--pos', t.value + '%'); return true; }

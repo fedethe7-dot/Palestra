@@ -3,7 +3,7 @@
    proposta della nuova scheda quando il programma finisce. */
 import { S, cfg, attrezzatura, sorted, lastFor, records } from './dati.js';
 import { num, todayISO, isoFrom, daysBetween, fmt, addDays } from './util.js';
-import { libreria, attrezzoDi, libDi } from './libreria.js';
+import { libreria, attrezzoDi, libDi, alternative } from './libreria.js';
 
 export const rangeDi = rip => {
   const n = (String(rip ?? '').match(/\d+/g) || []).map(Number);
@@ -67,6 +67,26 @@ export function caricoFattibile(e, kg) {
 /* ---------- Progressione: quanto fare oggi ---------- */
 /* Doppia progressione: quando completi il range di ripetizioni in tutte le serie, aumenti il carico
    e riparti dal basso del range; altrimenti stesso carico e una ripetizione in più. */
+/* Esercizio bloccato: nelle ultime 3 volte la forza stimata (1RM) non è mai salita rispetto alla volta prima */
+const forzaDi = ex => Math.max(0, ...(ex.sets || []).filter(x => !x.warm).map(x => { const kg = num(x.kg), r = num(x.reps); return kg && r ? kg * (1 + Math.min(r, 12) / 30) : 0; }));
+const kgMaxDi = ex => Math.max(0, ...(ex.sets || []).filter(x => !x.warm).map(x => num(x.kg) || 0));
+const storiaDi = nome => { const n = String(nome).toLowerCase(); return sorted().map(w => w.exercises.find(x => x.nome.toLowerCase() === n)).filter(x => x && x.tipo === 'carico' && x.sets?.length); };
+/* Se l'ultima volta è stata uno scarico, il carico a cui tornare */
+export function dopoScarico(nome) {
+  const st = storiaDi(nome); if (st.length < 2) return null;
+  const a = kgMaxDi(st.at(-2)), b = kgMaxDi(st.at(-1));
+  return a && b <= a * 0.93 ? a : null;
+}
+export function stallo(nome) {
+  const storia = storiaDi(nome).slice(-5);
+  if (storia.length < 4) return null;
+  const ult4 = storia.slice(-4), base = forzaDi(ult4[0]);
+  if (!base || ult4.slice(1).some(x => forzaDi(x) > base * 1.005)) return null;
+  // C'è già stato uno scarico (carico sceso di almeno il 7%) in queste volte?
+  const scarico = ult4.slice(1).some((x, i) => kgMaxDi(x) <= kgMaxDi(ult4[i]) * 0.93);
+  return { volte: 3, scarico };
+}
+
 export function obiettivo(e) {
   const last = lastFor(e.nome), r = rangeDi(e.rip), serie = num(e.serie) || 3;
   if (!last || !(last.ex.sets || []).length) {
@@ -93,10 +113,26 @@ export function obiettivo(e) {
     return { tipo: 'su', kg, reps: Array(serie).fill(r.lo), prec: txtPrec,
       testo: `Hai chiuso il range (${txtPrec}). Oggi sali a ${fmt(kg, 2)} kg e riparti da ${r.lo} ripetizioni.` };
   }
+  const torna = dopoScarico(e.nome);
+  if (torna) {
+    const kg = caricoFattibile(e, torna), rr = r ? r.lo : Math.max(...reps);
+    return { tipo: 'su', kg, reps: Array(serie).fill(rr), prec: txtPrec, testo: `Scarico fatto. Oggi torni a ${fmt(kg, 2)} kg e punti a ${rr} ripetizioni.` };
+  }
+  const st = stallo(e.nome);
+  if (st && !st.scarico) {
+    const kg = caricoFattibile(e, kgPrec * 0.9), rr = r ? r.lo : Math.max(...reps);
+    return { tipo: 'stallo', kg, reps: Array(serie).fill(rr), prec: txtPrec,
+      testo: `Sei fermo da 3 allenamenti (${txtPrec}). Oggi fai uno scarico: ${fmt(kg, 2)} kg (circa −10%) per ${rr} ripetizioni, senza arrivare al limite. La prossima volta torni a ${fmt(kgPrec, 2)} kg più fresco.` };
+  }
   const t = [...reps]; while (t.length < serie) t.push(t.at(-1) ?? (r ? r.lo : 8));
   const iMin = t.indexOf(Math.min(...t.slice(0, serie))); t[iMin]++;
   if (r && t.some(x => x < r.lo) && sets.filter(s => s.kg === kgPrec).every(s => s.reps < r.lo)) {
     return { tipo: 'uguale', kg: kgPrec, reps: Array(serie).fill(r.lo), prec: txtPrec, testo: `L'ultima volta ${txtPrec}: resta a ${fmt(kgPrec, 2)} kg e punta a ${r.lo} ripetizioni pulite.` };
+  }
+  if (st && st.scarico) {
+    const alt = alternative(e.nome, e.gruppo).filter(x => attrezzoDi(x) === attrezzoDi(e))[0] || alternative(e.nome, e.gruppo)[0];
+    return { tipo: 'stallo', kg: kgPrec, reps: t.slice(0, serie), prec: txtPrec,
+      testo: `Ancora fermo anche dopo lo scarico (${txtPrec}). Puoi provare ${t.slice(0, serie).join(' · ')}, ma conviene cambiare esercizio per qualche settimana con il tasto "Cambia"${alt ? ` (per esempio ${alt.nome})` : ''}.` };
   }
   return { tipo: 'uguale', kg: kgPrec, reps: t.slice(0, serie), prec: txtPrec, testo: `L'ultima volta ${txtPrec}. Stesso carico, prova ${t.slice(0, serie).join(' · ')}.` };
 }

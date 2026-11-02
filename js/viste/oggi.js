@@ -1,11 +1,12 @@
 /* ============ OGGI ============ */
 import { S, save, cfg, sorted, nextSession, records, streakWeeks, wVolume, bodyKg, statoProgramma, obiettiviGiorno, BETA } from '../dati.js';
 import { esc, fmt, todayISO, addDays, weekStart, daysBetween, fmtDateLong, num, normDate, toast, chiedi } from '../util.js';
-import { testata, ico, app } from '../ui.js';
+import { testata, ico, app, apriFoglio } from '../ui.js';
 import { obiettivo, muscoliPronti } from '../coach.js';
 import { fotoEs } from '../libreria.js';
 import { workoutPayload, flush } from '../sync.js';
 import { totaliGiorno } from './cucina.js';
+import { resocontoSettimana, righeResoconto } from '../resoconto.js';
 
 const minuti = sc => Math.round(sc.esercizi.reduce((s, e) => s + (num(e.serie) || 3), 0) * 3.2);
 
@@ -50,6 +51,24 @@ function cardProgramma() {
   return `<section class="card prog-card"><div class="row"><b>Programma attuale</b><span class="muted">settimana ${settN} di ${p.settimane}</span></div>
     <div class="barra"><i style="width:${(p.pct * 100).toFixed(0)}%"></i></div>
     <span class="muted small">Cambio scheda consigliato dal ${fmtDateLong(p.fine)}</span></section>`;
+}
+
+function cardResoconto() {
+  const wk = weekStart(), giorno = daysBetween(wk, todayISO());
+  if (giorno > 2 || cfg().resocontoVisto === wk) return '';
+  const r = resocontoSettimana();
+  if (!r.a.n && !r.b.n && r.a.peso == null) return '';
+  return `<section class="card resoconto"><div class="row"><b>La settimana scorsa</b><span class="muted small">${fmtDateLong(r.dal)} – ${fmtDateLong(r.al)}</span></div>
+    <div class="res-righe">${righeResoconto(r).slice(0, 4).map(([l, v, sub, cls]) => `<div class="res-r"><span>${l}</span><b>${v}</b><small class="${cls}">${sub}</small></div>`).join('')}</div>
+    <p class="small">${r.consiglio}</p>
+    <div class="row-btns"><button class="btn small" data-action="resoconto-apri">Vedi tutto</button><button class="btn small ghost" data-action="resoconto-ok">Ok, visto</button></div></section>`;
+}
+export function foglioResoconto() {
+  const r = resocontoSettimana();
+  apriFoglio(`<p class="muted small">Dal ${fmtDateLong(r.dal)} al ${fmtDateLong(r.al)}, confrontata con la settimana prima.</p>
+    <div class="res-righe">${righeResoconto(r).map(([l, v, sub, cls]) => `<div class="res-r"><span>${l}</span><b>${v}</b><small class="${cls}">${sub}</small></div>`).join('')}</div>
+    ${r.fermi.length ? `<p class="small"><b>Esercizi fermi:</b> ${r.fermi.map(esc).join(', ')}. Al prossimo allenamento il coach ti propone uno scarico.</p>` : ''}
+    <p class="small">${r.consiglio}</p>`, { titolo: 'Resoconto della settimana', id: 'resoconto' });
 }
 
 function cardSettimana() {
@@ -123,13 +142,15 @@ function cardBeta() {
 
 export function viewOggi() {
   const nome = (cfg().name || '').trim(), data = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
-  const pezzi = { allenamento: cardAllenamento, programma: cardProgramma, settimana: cardSettimana, muscoli: cardMuscoli, numeri: cardNumeri, cucina: cardCucina, record: cardRecord, ultimo: cardUltimo };
+  const pezzi = { allenamento: cardAllenamento, programma: cardProgramma, resoconto: cardResoconto, settimana: cardSettimana, muscoli: cardMuscoli, numeri: cardNumeri, cucina: cardCucina, record: cardRecord, ultimo: cardUltimo };
   return `${BETA ? '<div class="banner-beta">Versione di prova: dati copiati, il foglio Google non viene modificato</div>' : ''}
     ${testata(nome ? `Ciao ${esc(nome)}` : 'Ciao!', data)}${cardBeta()}
     <div class="pila">${cfg().home.filter(x => x.on && pezzi[x.k]).map(x => pezzi[x.k]()).join('')}</div>`;
 }
 
 export const azioni = {
+  'resoconto-apri': () => foglioResoconto(),
+  'resoconto-ok': () => { cfg().resocontoVisto = weekStart(); save(); app.render(); },
   'rimanda-scheda': () => { import('../coach.js').then(c => { c.rimandaScheda(14); save(); app.render(); toast('Ok, te lo ricordo tra 2 settimane'); }); },
   'beta-importa': () => {
     const extra = allenamentiBeta();

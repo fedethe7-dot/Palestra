@@ -3,7 +3,7 @@
    La struttura è compatibile con le versioni precedenti: migra() aggiunge solo i campi nuovi. */
 import { normDate, todayISO, uid, num, parseISO, isoOf, weekStart, addDays, isoFrom, daysBetween } from './util.js';
 
-export const VERSIONE = '6.1.1';
+export const VERSIONE = '6.2.0';
 
 /* ---------- Le tue schede di partenza (carichi aggiornati dalla Dashboard del foglio) ---------- */
 export const SCHEDE_DEFAULT = {
@@ -47,13 +47,13 @@ export const ATTREZZATURA_DEFAULT = {
 
 /* Sezioni della schermata Oggi, nell'ordine scelto */
 export const SEZIONI_HOME = [
-  ['allenamento', 'Allenamento di oggi'], ['programma', 'Avviso cambio scheda'], ['settimana', 'La tua settimana'],
+  ['allenamento', 'Allenamento di oggi'], ['programma', 'Avviso cambio scheda'], ['resoconto', 'Resoconto della settimana (lun-mer)'], ['settimana', 'La tua settimana'],
   ['muscoli', 'Muscoli pronti'], ['numeri', 'Numeri rapidi'], ['cucina', 'Cucina di oggi'],
   ['record', 'Ultimo record'], ['ultimo', 'Ultimo allenamento'],
 ];
 
 export const SETTINGS_DEFAULT = {
-  name: '', goal: '', syncUrl: '', syncToken: '', lastSync: '', syncError: '', lastRead: '',
+  name: '', goal: '', syncUrl: '', syncToken: '', backupUrl: '', ultimoBackup: '', backupErrore: '', resocontoVisto: '', lastSync: '', syncError: '', lastRead: '',
   altezza: '', eta: '', attivita: '1.55', fase: 'massa', grassoObj: '', ricetteVer: 0,
   // Aspetto
   stile: 'vetro', modo: 'auto', accento: '', testo: 1, carattere: 'stile', animazioni: 'normali',
@@ -89,9 +89,11 @@ export function migra(d) {
   // Vecchi temi (viola, aurora...) → nuovi stili
   if (!d.settings?.stile && d.settings?.accent) settings.stile = ['aurora', 'natura'].includes(d.settings.accent) ? 'vetro' : 'essenziale';
   if (d.settings?.theme && !d.settings?.modo) settings.modo = { auto: 'auto', light: 'chiaro', dark: 'scuro' }[d.settings.theme] || 'auto';
-  // Sezioni della home: aggiunge quelle nuove in fondo
+  // Sezioni della home: quelle nuove entrano nella loro posizione (dopo la sezione che le precede)
   const note = new Set((settings.home || []).map(x => x.k));
-  settings.home = [...(settings.home || []).filter(x => SEZIONI_HOME.some(([k]) => k === x.k)), ...SEZIONI_HOME.filter(([k]) => !note.has(k)).map(([k]) => ({ k, on: true }))];
+  const home = (settings.home || []).filter(x => SEZIONI_HOME.some(([k]) => k === x.k));
+  SEZIONI_HOME.forEach(([k], i) => { if (note.has(k)) return; const prima = i ? home.findIndex(x => x.k === SEZIONI_HOME[i - 1][0]) : -1; home.splice(prima + 1, 0, { k, on: true }); });
+  settings.home = home;
   settings.attrezzatura = { ...JSON.parse(JSON.stringify(ATTREZZATURA_DEFAULT)), ...(settings.attrezzatura || {}) };
   const workouts = pulisciAllenamenti(d.workouts);
   if (!settings.programmaInizio) {
