@@ -3,7 +3,7 @@
    La struttura è compatibile con le versioni precedenti: migra() aggiunge solo i campi nuovi. */
 import { normDate, todayISO, uid, num, parseISO, isoOf, weekStart, addDays, isoFrom, daysBetween } from './util.js';
 
-export const VERSIONE = '6.2.2';
+export const VERSIONE = '6.3.0';
 
 /* ---------- Le tue schede di partenza (carichi aggiornati dalla Dashboard del foglio) ---------- */
 export const SCHEDE_DEFAULT = {
@@ -48,7 +48,7 @@ export const ATTREZZATURA_DEFAULT = {
 /* Sezioni della schermata Oggi, nell'ordine scelto */
 export const SEZIONI_HOME = [
   ['allenamento', 'Allenamento di oggi'], ['programma', 'Avviso cambio scheda'], ['resoconto', 'Resoconto della settimana (lun-mer)'], ['settimana', 'La tua settimana'],
-  ['muscoli', 'Muscoli pronti'], ['numeri', 'Numeri rapidi'], ['cucina', 'Cucina di oggi'],
+  ['muscoli', 'Muscoli pronti'], ['numeri', 'Numeri rapidi'], ['attivita', 'Movimento e attività extra'], ['cucina', 'Cucina di oggi'],
   ['record', 'Ultimo record'], ['ultimo', 'Ultimo allenamento'],
 ];
 
@@ -64,6 +64,8 @@ export const SETTINGS_DEFAULT = {
   // Timer
   suono: true, vibrazione: true, conto321: true, avviso10: true, schermoAcceso: true, notifiche: false,
   attrezzatura: null,
+  // Nomi dei tipi di sessione dell'orologio (es. { 18: 'Calcetto' })
+  tipiOrologio: {},
 };
 
 /* ---------- Copia di prova (/Palestra/beta/): dati copiati, niente invio al foglio ---------- */
@@ -117,6 +119,9 @@ export function migra(d) {
     pasti: d.pasti || [],
     piatti: d.piatti || [],
     spesa: d.spesa || [],
+    // Orologio: giorni { 'AAAA-MM-GG': [passi, metri, kcal] } e sessioni; attività extra scritte a mano
+    orologio: d.orologio && d.orologio.giorni ? d.orologio : { giorni: {}, sport: [] },
+    extra: d.extra || [],
   };
 }
 

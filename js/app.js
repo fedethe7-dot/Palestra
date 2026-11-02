@@ -14,6 +14,7 @@ import * as Progressi from './viste/progressi.js';
 import * as Cucina from './viste/cucina.js';
 import * as Imp from './viste/impostazioni.js';
 import * as Strumenti from './viste/strumenti.js';
+import * as Attivita from './viste/attivita.js';
 import * as Cibo from './cibo.js';
 
 const VISTE = {
@@ -23,7 +24,7 @@ const VISTE = {
   progressi: Progressi.viewProgressi, cucina: Cucina.viewCucina, ricetta: Cucina.viewRicetta, 'ricetta-nuova': Cucina.viewRicettaNuova, impostazioni: Imp.viewImpostazioni,
 };
 const TAB = { modifica: 'schede', libreria: 'schede', esercizio: 'schede', 'crea-esercizio': 'schede', storico: 'schede', 'nuova-scheda': 'schede', ricetta: 'cucina', 'ricetta-nuova': 'cucina', allena: 'allenati' };
-const MODULI = [Allena, Schede, Progressi, Cucina, Imp, Oggi, Strumenti, Cibo];
+const MODULI = [Allena, Schede, Progressi, Cucina, Imp, Oggi, Strumenti, Cibo, Attivita];
 const AZIONI = Object.assign({}, ...MODULI.map(m => m.azioni || {}));
 
 /* ---------- Barra di navigazione ---------- */
@@ -79,7 +80,7 @@ window.addEventListener('popstate', e => {
 
 /* ---------- File (backup, CSV) ---------- */
 let modoFile = 'json';
-app.pickFile = modo => { modoFile = modo; const f = $('#file'); f.value = ''; f.accept = modo === 'json' ? '.json,application/json' : '.csv,text/csv'; f.click(); };
+app.pickFile = modo => { modoFile = modo; const f = $('#file'); f.value = ''; f.multiple = modo === 'orologio'; f.accept = modo === 'json' ? '.json,application/json' : modo === 'orologio' ? '.csv,text/csv,text/comma-separated-values' : '.csv,text/csv'; f.click(); };
 
 /* ---------- Eventi ---------- */
 document.addEventListener('click', e => {
@@ -98,6 +99,7 @@ document.addEventListener('keydown', e => {
 document.addEventListener('input', e => { if (e.target.classList?.contains('st-val')) e.target.style.setProperty('--ch', Math.max(2, e.target.value.length)); for (const m of MODULI) if (m.input && m.input(e.target)) return; });
 document.addEventListener('change', async e => {
   const t = e.target;
+  if (t.id === 'file' && t.files[0] && modoFile === 'orologio') return Attivita.importaOrologio(t.files);
   if (t.id === 'file' && t.files[0]) {
     const testo = await t.files[0].text();
     if (modoFile === 'ricette') Cucina.importRicetteCSV(testo); else Imp.importatori[modoFile](testo);

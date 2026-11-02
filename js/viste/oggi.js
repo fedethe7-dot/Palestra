@@ -1,4 +1,5 @@
 /* ============ OGGI ============ */
+import { cardAttivitaOggi } from './attivita.js';
 import { S, save, cfg, sorted, nextSession, records, streakWeeks, wVolume, bodyKg, statoProgramma, obiettiviGiorno, BETA } from '../dati.js';
 import { esc, fmt, todayISO, addDays, weekStart, daysBetween, fmtDateLong, num, normDate, toast, chiedi } from '../util.js';
 import { testata, ico, app, apriFoglio } from '../ui.js';
@@ -142,7 +143,7 @@ function cardBeta() {
 
 export function viewOggi() {
   const nome = (cfg().name || '').trim(), data = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
-  const pezzi = { allenamento: cardAllenamento, programma: cardProgramma, resoconto: cardResoconto, settimana: cardSettimana, muscoli: cardMuscoli, numeri: cardNumeri, cucina: cardCucina, record: cardRecord, ultimo: cardUltimo };
+  const pezzi = { allenamento: cardAllenamento, programma: cardProgramma, resoconto: cardResoconto, settimana: cardSettimana, muscoli: cardMuscoli, numeri: cardNumeri, attivita: cardAttivitaOggi, cucina: cardCucina, record: cardRecord, ultimo: cardUltimo };
   return `${BETA ? '<div class="banner-beta">Versione di prova: dati copiati, il foglio Google non viene modificato</div>' : ''}
     ${testata(nome ? `Ciao ${esc(nome)}` : 'Ciao!', data)}${cardBeta()}
     <div class="pila">${cfg().home.filter(x => x.on && pezzi[x.k]).map(x => pezzi[x.k]()).join('')}</div>`;

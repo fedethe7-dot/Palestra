@@ -12,7 +12,7 @@ Installabile sul telefono (PWA) e sincronizzata con il foglio Google **Allenamen
 | **Oggi** | Prossima sessione con il consiglio del coach, avviso cambio scheda, settimana, muscoli pronti, numeri rapidi, cucina del giorno, ultimo record (sezioni e ordine personalizzabili) |
 | **Schede** | Sessioni, modifica esercizi, libreria con foto e mappa muscoli, esercizi tuoi, storico, proposta della nuova scheda |
 | **Allenati** (pulsante centrale) | Un esercizio alla volta: serie con "ultima volta", pulsanti grandi −/+, RIR, dischi da montare, recupero automatico, plank con 3-2-1, timer libero, coach che riconosce quando sei fermo, riepilogo |
-| **Progressi** | Forza (massimale stimato, record), volume e serie per muscolo, frequenza, resoconto della settimana, corpo (peso, bilancia, misure, calorie, resoconto da stampare per il dimagrimento) e foto con confronto |
+| **Progressi** | Forza (massimale stimato, record), volume e serie per muscolo, frequenza, **attività** (passi, kcal attive, palestra e attività extra dall'orologio o scritte a mano), resoconto della settimana, corpo (peso, bilancia, misure, calorie, resoconto da stampare per il dimagrimento) e foto con confronto |
 | **Cucina** | Diario con kcal e macro, prodotti col codice a barre (Open Food Facts), ricette tue con valori scritti a mano, suggerimenti per le proteine mancanti, ricette con foto e porzioni, cucina passo passo, lista della spesa, piatti salvati |
 | **Impostazioni** (avatar in alto) | Profilo, aspetto (4 stili chiaro/scuro, colori, carattere, testo, animazioni, schermata Oggi), allenamento e cambio scheda, timer e suoni, attrezzatura e dischi, foglio Google, backup |
 
@@ -31,6 +31,9 @@ Installabile sul telefono (PWA) e sincronizzata con il foglio Google **Allenamen
 | `js/resoconto.js` | Resoconto della settimana |
 | `js/stampa.js` | Resoconto peso e composizione da stampare |
 | `apps-script/PalestraBackup.gs` | Script del backup nel foglio (vedi sotto) |
+| `js/viste/attivita.js` | Attività: passi, kcal, sessioni dell'orologio, attività extra (calcetto ecc.) senza doppioni |
+| `js/orologio-file.js` | Lettura dei file esportati dall'orologio (ACTIVITY e SPORT) e storico cifrato |
+| `dati/orologio-storico.enc` | Storico dell'orologio **cifrato** (AES-256): senza il codice non si legge |
 | `js/libreria.js` | Esercizi, foto, muscoli |
 | `js/grafici.js` | Grafici interattivi |
 | `js/viste/` | Le schermate (oggi, allena, schede, progressi, cucina, impostazioni, strumenti) |
@@ -67,3 +70,12 @@ Per notifiche del recupero precise anche a schermo spento il passo successivo è
 ## Crediti
 - Foto degli esercizi: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (pubblico dominio).
 - Foto dei piatti: [Wikimedia Commons](https://commons.wikimedia.org) (licenze libere, autori nelle pagine delle foto). Sono indicative.
+
+## Orologio e attività extra
+- **Importa file orologio** (Progressi → Attività): scegli i file esportati dall'app dell'orologio, anche tutti insieme.
+  Servono `ACTIVITY_….csv` (passi e kcal del giorno) e `SPORT_….csv` (sessioni); gli altri vengono saltati, i doppioni pure.
+- **Attività extra**: calcetto, corsa, bici… con minuti e kcal (se le lasci vuote le stimo dal peso).
+  Se l'orologio ha già registrato la stessa attività lo stesso giorno, la conto una volta sola.
+- I tipi di sessione dell'orologio arrivano come numeri: tocca la matita accanto a una sessione per dargli il nome giusto.
+- I dati restano nel telefono e finiscono nel backup settimanale del foglio (script "Palestra Backup"); non passano dal foglio degli allenamenti.
+- Il repository è pubblico: lo storico iniziale è cifrato e si apre solo con il codice personale.

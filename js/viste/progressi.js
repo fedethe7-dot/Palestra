@@ -8,6 +8,7 @@ import { lineChart, barChart, barreH, heatmap } from '../grafici.js';
 import { seriePerGruppo } from '../coach.js';
 import { queue } from '../sync.js';
 import { stampaDimagrimento } from '../stampa.js';
+import { tabAttivita } from './attivita.js';
 import { fotoTutte, fotoSalva, fotoElimina, fotoUrl } from '../foto.js';
 
 const PERIODI_TXT = { 30: 'ultimo mese', 90: 'ultimi 3 mesi', 180: 'ultimi 6 mesi', 365: 'ultimo anno' };
@@ -123,9 +124,9 @@ function foto() {
 }
 
 export function viewProgressi() {
-  const corpi = { forza, volume, corpo, foto };
+  const corpi = { forza, volume, attivita: () => tabAttivita(period), corpo, foto };
   return `${testata('Progressi', '')}
-    ${segmenti([['forza', 'Forza'], ['volume', 'Volume'], ['corpo', 'Corpo'], ['foto', 'Foto']], tab, 'prog-tab', 'grosso')}
+    ${segmenti([['forza', 'Forza'], ['volume', 'Volume'], ['attivita', 'Attività'], ['corpo', 'Corpo'], ['foto', 'Foto']], tab, 'prog-tab', 'grosso scorri')}
     ${tab !== 'foto' ? segmenti(PERIODI, period, 'prog-periodo', 'piccolo scorri') : ''}
     <div class="pila">${corpi[tab]()}</div>`;
 }
