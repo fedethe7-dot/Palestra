@@ -1,7 +1,7 @@
 /* Service worker di Palestra
    - file dell'app: prima la rete (vedi sempre l'ultima versione), la copia salvata se sei offline
    - foto dei piatti e caratteri: salvati la prima volta e poi presi dalla copia (funzionano offline) */
-const VER = '6.4.0';
+const VER = '6.4.1';
 const BASE = self.registration.scope.includes('/beta/') ? 'palestra-beta-' : 'palestra-';
 const CACHE = BASE + VER, CACHE_EXTRA = 'palestra-extra';
 const FILES = ['./', './index.html', './manifest.json', './ricette.csv', './icon-192.png', './css/app.css','./css/temi.css','./js/app.js','./js/coach.js','./js/dati.js','./js/foto-piatti.js','./js/foto.js','./js/grafici.js','./js/libreria.js','./js/stampa.js','./js/resoconto.js','./js/cibo.js','./js/sync.js','./js/tema.js','./js/timer.js','./js/ui.js','./js/util.js','./js/viste/allena.js','./js/viste/cucina.js','./js/viste/impostazioni.js','./js/viste/oggi.js','./js/viste/progressi.js','./js/viste/schede.js','./js/viste/strumenti.js','./js/viste/attivita.js','./js/orologio-file.js','./js/ponte-salute.js','./ponte-peso.js'];

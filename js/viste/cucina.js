@@ -197,22 +197,34 @@ function foglioPasso(r) {
     ${passo < n - 1 ? `<button class="btn big primary" data-action="cu-passo" data-d="1">Avanti ${ico('avanti', 18)}</button>` : `<button class="btn big primary" data-action="foglio-chiudi">Fatto ${ico('check', 18)}</button>`}</div></div>`;
 }
 
-/* ---------- Aggiungi pasto ---------- */
+/* ---------- Aggiungi pasto ----------
+   In alto i campi per scrivere il pasto; poi codice a barre e piatti salvati.
+   Le ricette compaiono solo con l'interruttore "Mostra anche le ricette" (resta ricordato). */
+const CAMPI_PASTO = ['pm-nome', 'pm-kcal', 'pm-p', 'pm-c', 'pm-f'];
 function foglioPasto(slot, filtro = '') {
   slotScelto = slot;
-  const q = filtro.toLowerCase();
-  const ric = (S.db.ricette || []).filter(r => !q || r.nome.toLowerCase().includes(q)).slice(0, 40);
+  const q = filtro.toLowerCase(), conRicette = !!cfg().ricetteNelDiario;
+  const ric = conRicette ? (S.db.ricette || []).filter(r => !q || r.nome.toLowerCase().includes(q)).slice(0, 40) : [];
   const pia = (S.db.piatti || []).filter(p => !q || p.nome.toLowerCase().includes(q));
   return `${segmenti(PASTI, slot, 'pasto-slot', 'piccolo')}
-    <button class="btn full" data-action="cb-diario">${ico('codice', 18)} Prodotto con codice a barre</button>
-    <div class="cerca-box">${ico('cerca', 18)}<input id="pasto-cerca" type="search" placeholder="Cerca ricetta o piatto" value="${esc(filtro)}"></div>
-    ${pia.length ? `<h4>Piatti salvati</h4>${pia.map(p => `<button class="ric-riga" data-action="pasto-piatto" data-id="${esc(p.id)}"><span><b>${esc(p.nome)}</b><small>${fmt(p.kcal)} kcal · ${fmt(p.p)} g prot.</small></span>${ico('piu', 18)}</button>`).join('')}` : ''}
-    <h4>Ricette (1 porzione)</h4>${ric.map(r => { const m = ricMacro(r).por; return `<button class="ric-riga" data-action="pasto-ricetta" data-id="${esc(r.id)}">${miniFoto(r)}<span><b>${esc(r.nome)}</b><small>${fmt(m.kcal)} kcal · ${fmt(m.p)} g prot.</small></span>${ico('piu', 18)}</button>`; }).join('')}
-    <h4>A mano</h4><div class="form"><label class="campo"><span>Nome</span><input id="pm-nome" placeholder="Es. Piadina crudo e squacquerone"></label>
+    <section class="form pasto-mano"><label class="campo"><span>Cosa hai mangiato</span><input id="pm-nome" placeholder="Es. Piadina crudo e squacquerone" autocomplete="off"></label>
       <div class="due"><label class="campo"><span>Kcal</span><input id="pm-kcal" inputmode="decimal"></label><label class="campo"><span>Proteine (g)</span><input id="pm-p" inputmode="decimal"></label>
       <label class="campo"><span>Carboidrati (g)</span><input id="pm-c" inputmode="decimal"></label><label class="campo"><span>Grassi (g)</span><input id="pm-f" inputmode="decimal"></label></div>
       <label class="riga-check"><input type="checkbox" id="pm-salva"> Salva tra i piatti per la prossima volta</label>
-      <button class="btn primary full" data-action="pasto-manuale">Aggiungi</button></div>`;
+      <button class="btn primary full" data-action="pasto-manuale">${ico('piu', 18)} Aggiungi</button></section>
+    <button class="btn full" data-action="cb-diario">${ico('codice', 18)} Prodotto con codice a barre</button>
+    ${pia.length ? `<h4>Piatti salvati</h4>${pia.map(p => `<button class="ric-riga" data-action="pasto-piatto" data-id="${esc(p.id)}"><span><b>${esc(p.nome)}</b><small>${fmt(p.kcal)} kcal · ${fmt(p.p)} g prot.</small></span>${ico('piu', 18)}</button>`).join('')}` : ''}
+    <label class="riga-check ricette-flag"><input type="checkbox" id="pm-ricette" ${conRicette ? 'checked' : ''}> Mostra anche le ricette</label>
+    ${conRicette ? `<div class="cerca-box">${ico('cerca', 18)}<input id="pasto-cerca" type="search" placeholder="Cerca ricetta o piatto" value="${esc(filtro)}"></div>
+    <h4>Ricette (1 porzione)</h4>${ric.length ? ric.map(r => { const m = ricMacro(r).por; return `<button class="ric-riga" data-action="pasto-ricetta" data-id="${esc(r.id)}">${miniFoto(r)}<span><b>${esc(r.nome)}</b><small>${fmt(m.kcal)} kcal · ${fmt(m.p)} g prot.</small></span>${ico('piu', 18)}</button>`; }).join('') : '<p class="muted small">Nessuna ricetta trovata.</p>'}` : ''}`;
+}
+/* ridisegna la finestra senza perdere quello che hai già scritto nei campi */
+function rinfrescaPasto(filtro) {
+  const val = {}; CAMPI_PASTO.forEach(id => { const e = document.getElementById(id); if (e) val[id] = e.value; });
+  const salva = document.getElementById('pm-salva')?.checked;
+  aggiornaFoglio(foglioPasto(slotScelto, filtro ?? (document.getElementById('pasto-cerca')?.value || '')));
+  CAMPI_PASTO.forEach(id => { const e = document.getElementById(id); if (e && val[id] != null) e.value = val[id]; });
+  const c = document.getElementById('pm-salva'); if (c && salva) c.checked = true;
 }
 function aggiungiPasto(x) {
   const d = giorno || todayISO();
@@ -338,7 +350,7 @@ export const azioni = {
     save(); toast(`${r.ingredienti.length} ingredienti nella lista della spesa`);
   },
   'pasto-add': el => apriFoglio(foglioPasto(el.dataset.slot), { titolo: 'Aggiungi al diario', cls: 'alto', id: 'pasto' }),
-  'pasto-slot': el => { slotScelto = el.dataset.v; aggiornaFoglio(foglioPasto(slotScelto, document.getElementById('pasto-cerca')?.value || '')); },
+  'pasto-slot': el => { slotScelto = el.dataset.v; rinfrescaPasto(); },
   'pasto-ricetta': el => { const r = ricDi(el.dataset.id), m = ricMacro(r).por; aggiungiPasto({ tipo: 'ricetta', ref: r.id, nome: r.nome, porz: 1, kcal: m.kcal, p: m.p, c: m.c, f: m.f }); },
   'pasto-piatto': el => { const p = S.db.piatti.find(x => x.id === el.dataset.id); aggiungiPasto({ tipo: 'piatto', ref: p.id, nome: p.nome, porz: 1, kcal: p.kcal, p: p.p, c: p.c, f: p.f }); },
   'pasto-manuale': () => {
@@ -362,10 +374,11 @@ export function input(t) {
   if (t.dataset.rb && bozzaRic) { bozzaRic[t.dataset.rb] = t.value; return true; }
   if (t.dataset.rbIng != null && bozzaRic) { bozzaRic.ingredienti[+t.dataset.rbIng][t.dataset.k] = t.value; return true; }
   if (t.id === 'ric-cerca') { query = t.value; const l = document.getElementById('ric-lista'); if (l) l.innerHTML = ricLista(); return true; }
-  if (t.id === 'pasto-cerca') { const v = t.value; aggiornaFoglio(foglioPasto(slotScelto, v)); const i = document.getElementById('pasto-cerca'); if (i) { i.focus(); i.setSelectionRange(v.length, v.length); } return true; }
+  if (t.id === 'pasto-cerca') { const v = t.value; rinfrescaPasto(v); const i = document.getElementById('pasto-cerca'); if (i) { i.focus(); i.setSelectionRange(v.length, v.length); } return true; }
   return false;
 }
 export function change(t) {
+  if (t.id === 'pm-ricette') { cfg().ricetteNelDiario = t.checked; save(); rinfrescaPasto(); if (t.checked) document.getElementById('pasto-cerca')?.scrollIntoView({ block: 'center' }); return true; }
   if (t.dataset.rbPref !== undefined && bozzaRic) { bozzaRic.preferita = t.checked; return true; }
   if (t.dataset.rb === 'porzioni' && bozzaRic) { app.render(); return true; }
   if (t.dataset.spesa) { const x = S.db.spesa.find(s => s.id === t.dataset.spesa); if (x) { x.fatto = t.checked; save(); t.closest('.sp-riga')?.classList.toggle('fatto', t.checked); } return true; }
