@@ -5,7 +5,7 @@ import { S, save, cfg, sorted, wVolume, nextSession, copiaSchede, statoProgramma
 import { esc, fmt, num, toast, chiedi, fmtDateLong, fmtDate, uid, todayISO } from '../util.js';
 import { testata, ico, app, apriFoglio, chiudiFoglio, vuoto, segmenti } from '../ui.js';
 import { libreria, libDi, visualDi, fotoEs, mappaMuscoli, NOMI_MUSCOLI, GRUPPI, ATTREZZI, MUSCOLI_GRUPPO } from '../libreria.js';
-import { propostaScheda, applicaScheda, rimandaScheda, seriePreviste } from '../coach.js';
+import { propostaScheda, applicaScheda, rimandaScheda, seriePreviste, perLato, aLato, daLato, kgN, kgT } from '../coach.js';
 import { lineChart } from '../grafici.js';
 
 let editS = null, libGruppo = 'Tutti', libQuery = '', libAtt = 'Tutti', proposta = null;
@@ -19,7 +19,7 @@ export function viewSchede() {
     return `<article class="card sess ${k === next ? 'next' : ''}">${foto ? `<img class="sess-foto" src="${fotoEs(foto.nome, foto.gruppo, 1)}" alt="" aria-hidden="true">` : ''}
       <div class="sess-in"><div class="row"><span class="lettera">${esc(k)}</span>${k === next ? '<span class="tag">Prossima</span>' : ''}</div>
       <h3>${esc(sc.nome)}</h3><span class="muted small">${sc.esercizi.length} esercizi · ~${minuti(sc)} min · ${l ? 'ultima ' + fmtDate(l.date) : 'mai fatta'}</span>
-      <ul class="sess-es">${sc.esercizi.map(e => `<li><span>${esc(e.nome)}</span><span class="muted">${e.serie}×${esc(e.rip)}${e.carico ? ` · ${esc(e.carico)} kg` : ''}</span></li>`).join('')}</ul>
+      <ul class="sess-es">${sc.esercizi.map(e => `<li><span>${esc(e.nome)}</span><span class="muted">${e.serie}×${esc(e.rip)}${e.carico ? ` · ${kgT(e, e.carico, 1)}` : ''}</span></li>`).join('')}</ul>
       <div class="row-btns"><button class="btn primary" data-action="start" data-s="${esc(k)}">${ico('play', 16)} Inizia</button>
         <button class="btn" data-action="go" data-view="modifica" data-p="${esc(k)}">${ico('matita', 16)} Modifica</button></div></div></article>`;
   }).join('');
@@ -53,7 +53,7 @@ export function viewModifica() {
       <label class="campo"><span>Tipo</span><select data-sk="tipo" data-i="${i}">${tipi.map(([k, l]) => `<option value="${k}" ${e.tipo === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="campo"><span>Serie</span><input type="number" inputmode="numeric" data-sk="serie" data-i="${i}" value="${esc(e.serie)}"></label>
       <label class="campo"><span>${e.tipo === 'tempo' ? 'Secondi' : 'Ripetizioni'}</span><input data-sk="rip" data-i="${i}" value="${esc(e.rip)}" placeholder="8-12"></label>
-      ${e.tipo === 'carico' ? `<label class="campo"><span>Carico (kg)</span><input inputmode="decimal" data-sk="carico" data-i="${i}" value="${esc(e.carico)}"></label>` : ''}
+      ${e.tipo === 'carico' ? `<label class="campo"><span>${perLato(e) ? 'Carico per lato (kg)' : 'Carico (kg)'}</span><input inputmode="decimal" data-sk="carico" data-i="${i}" value="${esc(perLato(e) && num(e.carico) != null ? String(aLato(e, e.carico)).replace('.', ',') : e.carico)}"></label>` : ''}
       <label class="campo"><span>Recupero</span><input data-sk="recupero" data-i="${i}" value="${esc(e.recupero)}" placeholder="90 sec / 2 min"></label></div>
     <label class="campo"><span>Note</span><input data-sk="note" data-i="${i}" value="${esc(e.note)}" placeholder="Manubri, elastici..."></label></article>`).join('');
   return `${testata('Modifica sessioni', 'Valgono dal prossimo allenamento', { back: 'schede' })}${tabs}
@@ -96,7 +96,7 @@ export function viewEsercizio() {
   const lista = (ids, cls) => ids.map(m => `<span class="mtag ${cls}">${NOMI_MUSCOLI[m] || m}</span>`).join('');
   const storia = sorted().map(w => ({ w, e: w.exercises.find(y => y.nome.toLowerCase() === String(nome).toLowerCase()) })).filter(y => y.e);
   const rec = records()[storia[0]?.e.nome || nome];
-  const pts = storia.filter(y => y.e.tipo === 'carico').map(y => ({ x: y.w.date, y: exE1rm(y.e), label: `${fmt(exMaxKg(y.e), 2)} kg (1RM ~${fmt(exE1rm(y.e), 1)})` })).filter(p => p.y);
+  const pts = storia.filter(y => y.e.tipo === 'carico').map(y => ({ x: y.w.date, y: exE1rm(y.e), label: `${kgT(y.e, exMaxKg(y.e))} (1RM ~${fmt(exE1rm(y.e), 1)} kg totali)` })).filter(p => p.y);
   const inSess = Object.entries(S.db.schede).filter(([, sc]) => sc.esercizi.some(e => e.nome.toLowerCase() === String(nome).toLowerCase())).map(([k]) => k);
   return `${testata(esc(nome), `${esc(x.gruppo || '')}${x.attrezzo ? ' · ' + esc(x.attrezzo) : ''}`, { back: 'libreria' })}
     <div class="pila">
@@ -107,9 +107,9 @@ export function viewEsercizio() {
     ${x.esecuzione ? `<section class="card"><h3>Come si fa</h3><ol class="passi">${x.esecuzione.map(t => `<li>${esc(t)}</li>`).join('')}</ol>
       ${x.errori?.length ? `<h4>Errori da evitare</h4><ul class="errori">${x.errori.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
       <p class="muted small">Consigliato: ${esc(x.rip)} ${x.tipo === 'tempo' ? 'secondi' : 'ripetizioni'} · recupero ${esc(x.recupero)}</p></section>` : ''}
-    <section class="card"><div class="row"><h3>I tuoi progressi</h3>${rec ? `<span class="tag">${ico('trofeo', 14)} ${fmt(rec.kg, 2)} kg × ${rec.reps}</span>` : ''}</div>
+    <section class="card"><div class="row"><h3>I tuoi progressi</h3>${rec ? `<span class="tag">${ico('trofeo', 14)} ${kgT(storia[0]?.e || x, rec.kg)} × ${rec.reps}</span>` : ''}</div>
       ${pts.length ? lineChart(pts, { unita: 'kg', dec: 1 }) + '<p class="muted small">Massimale stimato (1RM) a ogni allenamento. Tocca il grafico per i dettagli.</p>' : vuoto(storia.length ? 'Esercizio senza carico: guarda lo storico qui sotto' : 'Non hai ancora fatto questo esercizio', 'progressi')}
-      ${storia.length ? `<div class="mini-storia">${storia.slice(-6).reverse().map(y => `<div class="row"><span>${fmtDateLong(y.w.date)}</span><span class="muted">${y.e.sets.map(s => y.e.tipo === 'carico' ? `${fmt(s.kg, 2)}×${s.reps}` : s.reps).join(' · ')}</span></div>`).join('')}</div>` : ''}</section>
+      ${storia.length ? `<div class="mini-storia">${storia.slice(-6).reverse().map(y => `<div class="row"><span>${fmtDateLong(y.w.date)}</span><span class="muted">${y.e.sets.map(s => y.e.tipo === 'carico' ? `${kgN(y.e, s.kg)}×${s.reps}` : s.reps).join(' · ')}${y.e.tipo === 'carico' && perLato(y.e) ? ' <small>kg/lato</small>' : ''}</span></div>`).join('')}</div>` : ''}</section>
     <section class="card"><h3>Aggiungi a una sessione</h3><div class="row-btns">${Object.keys(S.db.schede).map(k => inSess.includes(k)
       ? `<button class="btn small" disabled>${ico('check', 14)} ${esc(k)}</button>` : `<button class="btn small primary" data-action="lib-add" data-s="${esc(k)}" data-nome="${esc(nome)}">Sessione ${esc(k)}</button>`).join('')}</div></section>
     ${x.mio ? `<div class="row-btns"><button class="btn full" data-action="go" data-view="crea-esercizio" data-p="${esc(nome)}">${ico('matita', 18)} Modifica</button>
@@ -159,7 +159,7 @@ function rigaW(w, sync) {
   return `<div class="riga-w2 ${open ? 'open' : ''}"><button class="rw-testa" data-action="apri-w" data-id="${esc(w.id)}" aria-expanded="${open}">
     <span class="lettera">${esc(w.session)}</span><span class="rw-t"><b>${fmtDateLong(w.date)}</b><small>${w.exercises.length} esercizi · ${fmt(wVolume(w))} kg${w.durata ? ` · ${w.durata}′` : ''}${w.kcal ? ` · ${w.kcal} kcal` : ''}</small></span>
     ${sync ? `<span class="sync ${w.synced ? 'ok' : ''}" title="${w.synced ? 'Nel foglio' : 'Da inviare'}">${ico('nuvola', 16)}</span>` : ''}${ico(open ? 'su' : 'giu', 18)}</button>
-    ${open ? `<div class="rw-det">${w.exercises.map(e => `<div class="row"><b>${esc(e.nome)}</b><span class="muted">${e.sets.map(s => e.tipo === 'carico' ? `${fmt(s.kg, 2)}×${s.reps}${s.rir != null ? ` @${s.rir}` : ''}` : `${s.reps}${e.tipo === 'tempo' ? '″' : ''}`).join(' · ')}</span></div>`).join('')}
+    ${open ? `<div class="rw-det">${w.exercises.map(e => `<div class="row"><b>${esc(e.nome)}</b><span class="muted">${e.sets.map(s => e.tipo === 'carico' ? `${kgN(e, s.kg)}×${s.reps}${s.rir != null ? ` @${s.rir}` : ''}` : `${s.reps}${e.tipo === 'tempo' ? '″' : ''}`).join(' · ')}</span></div>`).join('')}
       ${w.note ? `<p class="muted small">${ico('nota', 14)} ${esc(w.note)}</p>` : ''}
       <button class="btn small danger" data-action="del-w" data-id="${esc(w.id)}">${ico('cestino', 14)} Elimina</button></div>` : ''}</div>`;
 }
@@ -173,7 +173,7 @@ export function viewNuovaScheda() {
       <span>${proposta.fase === 'forza' ? 'Il primo esercizio di ogni sessione resta ma scende a 6-8 ripetizioni con più recupero: costruisci forza. Gli altri cambiano per dare uno stimolo nuovo.' : 'Si torna a 8-12 ripetizioni sul primo esercizio, gli altri ruotano.'}
       Cambiare ogni ${cfg().programmaSettimane} settimane evita lo stallo; la durata la cambi in Impostazioni.</span></div></section>
     ${Object.entries(proposta.schede).map(([k, sc]) => `<section class="card"><div class="row"><span class="lettera">${esc(k)}</span><b>${esc(sc.nome)}</b></div>
-      <ul class="proposta">${sc.esercizi.map((e, i) => `<li><div><b>${esc(e.nome)}</b><small>${e.serie}×${esc(e.rip)} · ${esc(e.recupero)}${e.carico ? ` · ${esc(e.carico)} kg` : ''}</small><em>${esc(e.motivo || '')}</em></div>
+      <ul class="proposta">${sc.esercizi.map((e, i) => `<li><div><b>${esc(e.nome)}</b><small>${e.serie}×${esc(e.rip)} · ${esc(e.recupero)}${e.carico ? ` · ${kgT(e, e.carico, 1)}` : ''}</small><em>${esc(e.motivo || '')}</em></div>
         <button class="icon-btn" data-action="prop-cambia" data-s="${esc(k)}" data-i="${i}" aria-label="Scegli un altro esercizio">${ico('scambia', 18)}</button></li>`).join('')}</ul></section>`).join('')}
     <button class="btn primary huge full" data-action="prop-applica">${ico('check', 20)} Usa questa scheda da oggi</button>
     <div class="row-btns"><button class="btn full" data-action="prop-rigenera">${ico('ripeti', 18)} Altra proposta</button>
@@ -258,7 +258,9 @@ export function input(t) {
   if (t.dataset.sk && S.db.schede[editS]) {
     const s = S.db.schede[editS], k = t.dataset.sk;
     if (k === 'sessione-nome') s.nome = t.value;
-    else { const e = s.esercizi[+t.dataset.i]; e[k] = k === 'serie' ? (parseInt(t.value) || 1) : t.value;
+    else { const e = s.esercizi[+t.dataset.i];
+      // carico del bilanciere: scritto per lato, salvato come peso reale
+      e[k] = k === 'serie' ? (parseInt(t.value) || 1) : k === 'carico' && perLato(e) && num(t.value) != null ? String(daLato(e, t.value)) : t.value;
       if (k === 'nome') { const x = libDi(t.value); if (x) { e.gruppo = x.gruppo; e.tipo = x.tipo; } } }
     save(); return true;
   }

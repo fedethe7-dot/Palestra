@@ -5,7 +5,7 @@ import { S, save, cfg, sorted, inPeriod, wVolume, exMaxKg, exE1rm, exVolume, exR
 import { esc, fmt, num, todayISO, isoFrom, addDays, weekStart, fmtDate, fmtDateLong, uid, toast, chiedi, daysBetween } from '../util.js';
 import { testata, ico, app, segmenti, vuoto, apriFoglio, chiudiFoglio } from '../ui.js';
 import { lineChart, barChart, barreH, heatmap } from '../grafici.js';
-import { seriePerGruppo } from '../coach.js';
+import { seriePerGruppo, perLato, aLato, kgN, kgT } from '../coach.js';
 import { queue } from '../sync.js';
 import { stampaDimagrimento } from '../stampa.js';
 import { tabAttivita } from './attivita.js';
@@ -24,9 +24,9 @@ function forza() {
   if (!nomi.length) return vuoto('Registra il primo allenamento per vedere i progressi', 'progressi');
   if (!nomi.includes(chartEx)) chartEx = Object.values(S.db.schede)[0]?.esercizi.find(e => nomi.includes(e.nome))?.nome || nomi[0];
   const voci = ws.map(w => ({ w, e: w.exercises.find(x => x.nome === chartEx) })).filter(x => x.e);
-  const M = { e1rm: ['Massimale stimato', e => exE1rm(e), 'kg', 1], max: ['Carico massimo', e => exMaxKg(e), 'kg', 2], vol: ['Volume', e => exVolume(e), 'kg', 0], rip: ['Ripetizioni totali', e => exReps(e), 'rip', 0] };
+  const M = { e1rm: ['Massimale stimato', e => exE1rm(e), 'kg', 1], max: ['Carico massimo', e => perLato(e) ? aLato(e, exMaxKg(e)) : exMaxKg(e), voci[0] && perLato(voci[0].e) ? 'kg/lato' : 'kg', 2], vol: ['Volume', e => exVolume(e), 'kg', 0], rip: ['Ripetizioni totali', e => exReps(e), 'rip', 0] };
   const [titolo, f, unita, dec] = M[metrica];
-  const pts = voci.map(({ w, e }) => ({ x: w.date, y: f(e), label: `${fmt(f(e), dec)} ${unita} · ${e.sets.map(s => `${fmt(s.kg, 2)}×${s.reps}`).join(' ')}` })).filter(p => p.y);
+  const pts = voci.map(({ w, e }) => ({ x: w.date, y: f(e), label: `${fmt(f(e), dec)} ${unita} · ${e.sets.map(s => `${kgN(e, s.kg)}×${s.reps}`).join(' ')}${perLato(e) ? ' kg/lato' : ''}` })).filter(p => p.y);
   const delta = pts.length > 1 ? (pts.at(-1).y / pts[0].y - 1) * 100 : null;
   const rec = Object.entries(records()).sort((a, b) => b[1].date.localeCompare(a[1].date));
   return `<section class="card">
@@ -37,7 +37,7 @@ function forza() {
     ${segmenti([['e1rm', '1RM'], ['max', 'Max'], ['vol', 'Volume'], ['rip', 'Rip.']], metrica, 'prog-metrica', 'piccolo')}
     <p class="muted small">Il massimale stimato (1RM) unisce peso e ripetizioni: sale anche quando fai più ripetizioni con lo stesso peso.</p></section>
     <section class="card"><div class="row"><h3>Record personali</h3>${ico('trofeo', 20)}</div>
-      ${rec.length ? `<div class="lista-rec">${rec.map(([n, r]) => `<button class="rec-riga" data-action="go" data-view="esercizio" data-p="${esc(n)}"><span><b>${esc(n)}</b><small>${fmtDateLong(r.date)}</small></span><b class="rec-val">${fmt(r.kg, 2)} × ${r.reps}</b></button>`).join('')}</div>` : vuoto('Ancora nessun record')}</section>`;
+      ${rec.length ? `<div class="lista-rec">${rec.map(([n, r]) => `<button class="rec-riga" data-action="go" data-view="esercizio" data-p="${esc(n)}"><span><b>${esc(n)}</b><small>${fmtDateLong(r.date)}</small></span><b class="rec-val">${perLato({ nome: n }) ? `${kgN({ nome: n }, r.kg)}/lato` : fmt(r.kg, 2)} × ${r.reps}</b></button>`).join('')}</div>` : vuoto('Ancora nessun record')}</section>`;
 }
 
 /* ---------- Volume e frequenza ---------- */

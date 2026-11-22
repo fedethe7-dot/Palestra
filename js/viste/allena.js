@@ -4,13 +4,12 @@
 import { S, save, cfg, records, lastFor, durataAuto, durataDraft, riallineaTempo, stimaKcal, bodyKg, nextSession } from '../dati.js';
 import { esc, fmt, num, todayISO, toast, chiedi, restSec, vibra, uid, secTxt, clamp, fmtDateLong } from '../util.js';
 import { ico, app, apriFoglio, chiudiFoglio, festa } from '../ui.js';
-import { obiettivo, passoKg, dischiBilanciere, dischiCarrucola, riscaldamento, eRecord, rangeDi } from '../coach.js';
+import { obiettivo, passoKg, dischiBilanciere, dischiCarrucola, riscaldamento, eRecord, rangeDi, perLato, aLato, daLato, kgN, kgT } from '../coach.js';
 import { libDi, visualDi, fotoEs, attrezzoDi, alternative, mappaMuscoli, NOMI_MUSCOLI, libreria, GRUPPI } from '../libreria.js';
 import { startRest, stopRest, addRest, apriRestFull, chiudiRestFull, workStato, workDur, workStart, workPause, workResume, workReset, workStop, workSetDur, schermoAcceso, sbloccaAudio, beep } from '../timer.js';
 import { queue, workoutPayload } from '../sync.js';
 
 const repsDi = s => s.reps !== '' && s.reps != null ? s.reps : s.target;
-const kgTxt = v => v === '' || v == null ? '—' : fmt(num(v), 2);
 export const exFatto = e => e.sets.length && e.sets.every(s => s.done);
 const setCorrente = e => { const i = e.sets.findIndex(s => s.sel && !s.done); if (i >= 0) return i; const j = e.sets.findIndex(s => !s.done); return j < 0 ? -1 : j; };
 
@@ -37,7 +36,7 @@ function dischiInfo(e, kg) {
     const r = dischiBilanciere(kg);
     if (r.sotto) return `<div class="dischi">Solo bilanciere (${fmt(num(S.db.settings.attrezzatura.bilanciere), 1)} kg)</div>`;
     return `<div class="dischi" aria-label="Dischi per lato">${ico('dischi', 18)}<span>Per lato:</span>${r.lato.length ? r.lato.map(d => `<i class="disco d${String(d).replace('.', '_')}">${fmt(d, 2)}</i>`).join('') : '<em>niente</em>'}
-      ${r.esatto ? '' : `<em class="warn">non esatto: ${fmt(r.totale, 2)} kg con i tuoi dischi</em>`}</div>`;
+      ${r.esatto ? `<em class="muted">totale ${fmt(r.totale, 2)} kg</em>` : `<em class="warn">non esatto: ${fmt(aLato(e, r.totale), 2)} kg per lato con i tuoi dischi</em>`}</div>`;
   }
   if (att === 'Carrucola alta') {
     const r = dischiCarrucola(kg);
@@ -50,17 +49,17 @@ const chN = v => Math.max(2, String(v ?? '').length);
 function tabellaSerie(e, i) {
   const last = lastFor(e.nome, S.db.draft.date), cur = setCorrente(e), carico = e.tipo === 'carico';
   const unit = e.tipo === 'tempo' ? 'Sec' : 'Rip';
-  const prec = j => { const s = last?.ex.sets[j]; if (!s) return '—'; return carico ? `${kgTxt(s.kg)}×${s.reps}` : `${s.reps}${e.tipo === 'tempo' ? '″' : ''}`; };
+  const prec = j => { const s = last?.ex.sets[j]; if (!s) return '—'; return carico ? `${s.kg === '' || s.kg == null ? '—' : kgN(e, s.kg)}×${s.reps}` : `${s.reps}${e.tipo === 'tempo' ? '″' : ''}`; };
   return `<div class="serie ${carico ? 'con-kg' : ''}" role="table" aria-label="Serie">
-    <div class="s-riga s-testa" role="row"><span aria-label="Serie">N°</span><span>Ultima</span>${carico ? '<span>Kg</span>' : ''}<span>${unit}</span><span>RIR</span><span class="sr-only">Fatta</span></div>
+    <div class="s-riga s-testa" role="row"><span aria-label="Serie">N°</span><span>Ultima</span>${carico ? `<span>${perLato(e) ? 'Kg/lato' : 'Kg'}</span>` : ''}<span>${unit}</span><span>RIR</span><span class="sr-only">Fatta</span></div>
     ${e.sets.map((s, j) => {
       const stato = s.done ? 'fatta' : j === cur ? 'cur' : 'todo', n = j + 1 - e.sets.slice(0, j).filter(x => x.warm).length;
-      const kgV = s.kg === '' || s.kg == null ? '' : String(s.kg).replace('.', ','), tgt = s.target !== '' && s.target != null ? s.target : '';
+      const kgV = s.kg === '' || s.kg == null || num(s.kg) == null ? '' : String(aLato(e, s.kg)).replace('.', ','), tgt = s.target !== '' && s.target != null ? s.target : '';
       const campo = (k, val, ph, mode, lab) => `<input class="s-in" data-sv="${k}" data-ex="${i}" data-set="${j}" value="${esc(val)}" placeholder="${esc(ph)}" inputmode="${mode}" enterkeyhint="next" autocomplete="off" aria-label="${lab} serie ${n}" style="--ch:${chN(val || ph)}">`;
       return `<div class="s-riga ${stato} ${s.warm ? 'warm' : ''}" role="row">
         <button class="s-sel" data-action="set-sel" data-ex="${i}" data-set="${j}" aria-label="Serie ${n}">${s.warm ? 'R' : n}</button>
         <span class="s-prec">${s.warm ? 'riscald.' : prec(n - 1)}</span>
-        ${carico ? campo('kg', kgV, '—', 'decimal', 'Kg') : ''}
+        ${carico ? campo('kg', kgV, '—', 'decimal', perLato(e) ? 'Kg per lato' : 'Kg') : ''}
         ${campo('reps', s.reps, tgt, 'numeric', e.tipo === 'tempo' ? 'Secondi' : 'Ripetizioni')}
         ${campo('rir', s.rir == null ? '' : s.rir, '–', 'numeric', 'RIR')}
         <button class="s-ok ${s.done ? 'on' : ''}" data-action="set-done" data-ex="${i}" data-set="${j}" aria-label="${s.done ? 'Annulla serie' : 'Segna serie fatta'}" aria-pressed="${s.done}">${ico('check', 18)}</button></div>`; }).join('')}
@@ -95,7 +94,7 @@ function bloccoEsercizio(e, i) {
     <div class="es-testa"><div class="es-tt"><h2>${esc(e.nome)}</h2><span class="es-mus">${muscoli}</span><span class="es-meta">${meta}</span></div>
       <button class="es-info" data-action="tecnica" data-nome="${esc(e.nome)}" aria-label="Tecnica, foto e muscoli di ${esc(e.nome)}">${ico('info', 20)}<span>Tecnica</span></button></div>
     ${e.coach?.testo ? `<div class="coach-tip ${e.coach.tipo}">${ico(e.coach.tipo === 'su' ? 'lampo' : e.coach.tipo === 'stallo' ? 'info' : 'progressi', 18)}<span>${esc(e.coach.testo)}</span></div>` : ''}
-    ${warm.length ? `<button class="chip-btn" data-action="riscaldamento">${ico('fuoco', 16)} Aggiungi riscaldamento: ${warm.map(w => `${fmt(w.kg, 2)}×${w.reps}`).join(', ')}</button>` : ''}
+    ${warm.length ? `<button class="chip-btn" data-action="riscaldamento">${ico('fuoco', 16)} Aggiungi riscaldamento: ${warm.map(w => `${aLato(e, w.kg) ? kgN(e, w.kg) : 'bil.'}×${w.reps}`).join(', ')}${perLato(e) ? ' (kg per lato)' : ''}</button>` : ''}
     ${tabellaSerie(e, i)}
     <div class="es-azioni"><button class="btn small ghost" data-action="set-add">${ico('piu', 16)} Serie</button>
       <button class="btn small ghost" data-action="set-del" ${e.sets.filter(s => !s.done).length > 0 && e.sets.length > 1 ? '' : 'disabled'}>${ico('meno', 16)} Serie</button>
@@ -144,7 +143,7 @@ function riepilogo() {
       <div class="tile"><span class="t-lab">Volume</span><b class="t-val">${fmt(vol)}</b><span class="t-sub">kg</span></div>
       <div class="tile"><span class="t-lab">Durata</span><b class="t-val">${dur}</b><span class="t-sub">min</span></div></div>
     <div class="card lista">${d.exercises.map((e, i) => `<button class="riga-es" data-action="wk-go" data-i="${i}"><span class="stato ${exFatto(e) ? 'ok' : e.sets.some(s => s.done) ? 'mezzo' : ''}">${exFatto(e) ? ico('check', 14) : ''}</span>
-      <span class="re-nome">${esc(e.nome)}</span><span class="muted">${e.sets.filter(s => s.done && !s.warm).map(s => e.tipo === 'carico' ? `${kgTxt(s.kg)}×${s.reps || s.target}` : `${s.reps || s.target}${e.tipo === 'tempo' ? '″' : ''}`).join(' · ') || '—'}</span></button>`).join('')}</div>
+      <span class="re-nome">${esc(e.nome)}</span><span class="muted">${e.sets.filter(s => s.done && !s.warm).map(s => e.tipo === 'carico' ? `${s.kg === '' || s.kg == null ? '—' : kgN(e, s.kg)}×${s.reps || s.target}` : `${s.reps || s.target}${e.tipo === 'tempo' ? '″' : ''}`).join(' · ') || '—'}</span></button>`).join('')}</div>
     <div class="card form">
       <label class="campo"><span>Data</span><input type="date" id="wk-data" data-draft="date" value="${esc(d.date)}"></label>
       <div class="due"><label class="campo"><span>Durata (min)</span><input type="number" inputmode="numeric" id="wk-durata" data-draft="durata" value="${esc(d.durata || '')}" placeholder="${durataAuto(d)}"></label>
@@ -218,10 +217,10 @@ function segnaFatta(i, j) {
   d.ultimaAttivita = Date.now();
   s.done = true; s.sel = false; save();
   sbloccaAudio(); if (S.db.settings.vibrazione) vibra(30);
-  if (rec) { festa(); beep(1318, 0.12, 2); toast(`🏆 Nuovo record su ${e.nome}: ${fmt(kg, 2)} kg × ${reps}!`); }
+  if (rec) { festa(); beep(1318, 0.12, 2); toast(`🏆 Nuovo record su ${e.nome}: ${kgT(e, kg)} × ${reps}!`); }
   const rimaste = e.sets.some(x => !x.done);
   if (S.db.settings.recuperoAuto && (rimaste || i + 1 < d.exercises.length)) {
-    const prossima = rimaste ? `Prossima: serie ${setCorrente(e) + 1} · ${e.tipo === 'carico' ? kgTxt(e.sets[setCorrente(e)].kg) + ' kg' : ''}` : `Prossimo: ${d.exercises[i + 1].nome}`;
+    const prossima = rimaste ? `Prossima: serie ${setCorrente(e) + 1} · ${e.tipo === 'carico' ? kgT(e, e.sets[setCorrente(e)].kg) : ''}` : `Prossimo: ${d.exercises[i + 1].nome}`;
     startRest(s.warm ? 60 : restSec(e.recupero), prossima);
   }
   if (!rimaste && i + 1 < d.exercises.length) avantiTra(i, 10);
@@ -352,10 +351,12 @@ export function input(t) {
     const e = d.exercises[+t.dataset.ex], j = +t.dataset.set, x = e?.sets[j]; if (!x) return true;
     const v = t.value.trim().replace(',', '.'); t.style.setProperty('--ch', Math.max(2, t.value.length));
     if (t.dataset.sv === 'kg') {
-      x.kg = v;
+      // sul bilanciere scrivi il peso di un lato: salvo il peso reale (bilanciere + due lati)
+      const kgVero = v === '' ? '' : (daLato(e, v) ?? v);
+      x.kg = kgVero;
       // il peso vale anche per le serie dopo non ancora fatte
       if (!x.done) for (let k = j + 1; k < e.sets.length; k++) if (!e.sets[k].done && !e.sets[k].warm) {
-        e.sets[k].kg = v; const el = document.querySelector(`[data-sv="kg"][data-ex="${t.dataset.ex}"][data-set="${k}"]`); if (el) { el.value = t.value; el.style.setProperty('--ch', Math.max(2, t.value.length)); } }
+        e.sets[k].kg = kgVero; const el = document.querySelector(`[data-sv="kg"][data-ex="${t.dataset.ex}"][data-set="${k}"]`); if (el) { el.value = t.value; el.style.setProperty('--ch', Math.max(2, t.value.length)); } }
       const box = document.getElementById('dischi-box'); if (box && setCorrente(e) >= 0) box.innerHTML = dischiInfo(e, e.sets[setCorrente(e)].kg);
     } else if (t.dataset.sv === 'reps') x.reps = v;
     else { const r = parseInt(v, 10); x.rir = isNaN(r) ? null : clamp(r, 0, 5); }
@@ -364,7 +365,7 @@ export function input(t) {
   if (t.dataset.campoInput) {
     const e = d.exercises[d.cur], j = setCorrente(e); if (j < 0) return true;
     const v = t.value.replace(',', '.');
-    if (t.dataset.campoInput === 'kg') { for (let k = j; k < e.sets.length; k++) if (!e.sets[k].done && (k === j || !e.sets[k].warm)) e.sets[k].kg = v; }
+    if (t.dataset.campoInput === 'kg') { const kgVero = v === '' ? '' : (daLato(e, v) ?? v); for (let k = j; k < e.sets.length; k++) if (!e.sets[k].done && (k === j || !e.sets[k].warm)) e.sets[k].kg = kgVero; }
     else e.sets[j].reps = v;
     save(); return true;
   }

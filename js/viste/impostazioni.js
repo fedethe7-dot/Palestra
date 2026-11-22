@@ -95,7 +95,7 @@ function attrezzatura_() {
   const a = attrezzatura(), maxB = dischiBilanciere(999).totale;
   return `<section class="card form"><h3>Bilanciere</h3>
     <label class="campo"><span>Peso del bilanciere (kg)</span><input type="number" inputmode="decimal" data-att="bilanciere" value="${esc(a.bilanciere)}"></label>
-    <p class="muted small">Con i tuoi dischi arrivi fino a <b>${fmt(maxB, 2)} kg</b> sul bilanciere.</p></section>
+    <p class="muted small">Negli esercizi col bilanciere scrivi e vedi solo il peso da montare su <b>un lato</b>: l'app aggiunge da sola il bilanciere e l'altro lato. Con i tuoi dischi arrivi fino a <b>${fmt((maxB - num(a.bilanciere)) / 2, 2)} kg per lato</b> (${fmt(maxB, 2)} kg in totale).</p></section>
     <section class="card"><div class="row"><h3>Dischi</h3><span class="muted small">quantità totale</span></div>
       <div class="dischi-tab"><div class="dt-r dt-h"><span>Kg</span><span>Quanti</span><span>Carrucola</span><span></span></div>
       ${a.dischi.map((d, i) => `<div class="dt-r"><input inputmode="decimal" data-disco="${i}" data-k="kg" value="${esc(d.kg)}" aria-label="Peso disco"><input inputmode="numeric" data-disco="${i}" data-k="qta" value="${esc(d.qta)}" aria-label="Quantità">
@@ -105,7 +105,7 @@ function attrezzatura_() {
       <p class="muted small">Dal foglio "Pesi": sulla carrucola vanno solo i dischi piccoli (quelli grandi non ci stanno contro il muro).</p></section>
     <section class="card form"><h3>Carrucola e aumenti</h3>
       <label class="campo"><span>Carico massimo carrucola (kg)</span><input type="number" inputmode="decimal" data-att="carrucolaMax" value="${esc(a.carrucolaMax)}"></label>
-      <div class="due"><label class="campo"><span>Aumento bilanciere</span><input inputmode="decimal" data-att="passoBilanciere" value="${esc(a.passoBilanciere)}"></label>
+      <div class="due"><label class="campo"><span>Aumento bilanciere (per lato)</span><input inputmode="decimal" data-att="passoBilanciere" value="${esc(a.passoBilanciere)}"></label>
         <label class="campo"><span>Aumento manubri</span><input inputmode="decimal" data-att="passoManubri" value="${esc(a.passoManubri)}"></label>
         <label class="campo"><span>Aumento carrucola</span><input inputmode="decimal" data-att="passoCarrucola" value="${esc(a.passoCarrucola)}"></label></div>
       <p class="muted small">Di quanti kg sale il carico quando il coach dice "aumenta" e quando premi + durante l'allenamento.</p></section>`;

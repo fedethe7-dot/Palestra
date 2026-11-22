@@ -3,7 +3,7 @@ import { cardAttivitaOggi } from './attivita.js';
 import { S, save, cfg, sorted, nextSession, records, streakWeeks, wVolume, bodyKg, statoProgramma, obiettiviGiorno, BETA } from '../dati.js';
 import { esc, fmt, todayISO, addDays, weekStart, daysBetween, fmtDateLong, num, normDate, toast, chiedi } from '../util.js';
 import { testata, ico, app, apriFoglio } from '../ui.js';
-import { obiettivo, muscoliPronti } from '../coach.js';
+import { obiettivo, muscoliPronti, kgT } from '../coach.js';
 import { fotoEs } from '../libreria.js';
 import { workoutPayload, flush } from '../sync.js';
 import { totaliGiorno } from './cucina.js';
@@ -115,7 +115,7 @@ function cardRecord() {
   const pr = Object.entries(records()).sort((a, b) => b[1].date.localeCompare(a[1].date))[0];
   if (!pr) return '';
   return `<section class="card record">${ico('trofeo', 26)}<div><span class="eyebrow">Ultimo record</span><b>${esc(pr[0])}</b>
-    <span class="muted">${fmt(pr[1].kg, 2)} kg × ${pr[1].reps} · ${fmtDateLong(pr[1].date)}</span></div></section>`;
+    <span class="muted">${kgT({ nome: pr[0] }, pr[1].kg)} × ${pr[1].reps} · ${fmtDateLong(pr[1].date)}</span></div></section>`;
 }
 function cardUltimo() {
   const w = sorted().at(-1); if (!w) return `<section class="card">${'Nessun allenamento ancora: inizia il primo!'}</section>`;

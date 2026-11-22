@@ -14,15 +14,26 @@ export const rangeDi = rip => {
 /* Passo di aumento del carico in base all'attrezzo */
 export function passoKg(e) {
   const a = attrezzatura(), att = attrezzoDi(e);
-  if (att === 'Bilanciere') return num(a.passoBilanciere) || 2;
+  if (att === 'Bilanciere') return 2 * (num(a.passoBilanciere) || 1);   // l'aumento è per lato: il totale sale del doppio
   if (att === 'Carrucola alta') return num(a.passoCarrucola) || 1;
   return num(a.passoManubri) || 1;
 }
 
+/* ---------- Bilanciere: peso per lato ----------
+   Nel telefono e nel foglio resta il peso reale (bilanciere + dischi dei due lati).
+   Per gli esercizi col bilanciere l'app mostra e fa scrivere solo il peso da montare su UN lato. */
+export const barKg = () => num(attrezzatura().bilanciere) || 8.7;
+export const perLato = e => !!e && attrezzoDi(e) === 'Bilanciere';
+export const aLato = (e, kg) => { kg = num(kg); if (kg == null || !perLato(e)) return kg; return Math.max(0, Math.round((kg - barKg()) / 2 * 100) / 100); };
+export const daLato = (e, v) => { v = num(v); if (v == null || !perLato(e)) return v; return Math.round((barKg() + 2 * v) * 100) / 100; };
+/* Numero da mostrare (per lato sul bilanciere) e testo con unità */
+export const kgN = (e, kg, dec = 2) => fmt(aLato(e, kg), dec);
+export const kgT = (e, kg, dec = 2) => perLato(e) ? (aLato(e, kg) ? `${kgN(e, kg, dec)} kg per lato` : 'solo bilanciere') : `${fmt(num(kg), dec)} kg`;
+
 /* ---------- Dischi ---------- */
 /* Bilanciere: dischi per lato (ogni disco si usa a coppie). Restituisce null se non c'è un bilanciere */
 export function dischiBilanciere(totale) {
-  const a = attrezzatura(), bar = num(a.bilanciere) || 20;
+  const a = attrezzatura(), bar = barKg();
   let lato = (totale - bar) / 2;
   if (lato < 0) return { lato: [], esatto: false, totale: bar, sotto: true };
   const disp = [...a.dischi].map(d => ({ kg: num(d.kg), n: Math.floor((num(d.qta) || 0) / 2) })).filter(d => d.kg > 0).sort((x, y) => y.kg - x.kg);
@@ -50,7 +61,7 @@ function combinazioni(dischi, max) {
 export function carichiPossibili(e) {
   const a = attrezzatura(), att = attrezzoDi(e);
   if (att === 'Bilanciere') {
-    const bar = num(a.bilanciere) || 20;
+    const bar = barKg();
     const lato = combinazioni(a.dischi.map(d => ({ kg: num(d.kg), n: Math.floor((num(d.qta) || 0) / 2) })).filter(d => d.kg > 0), 200);
     return lato.map(x => Math.round((bar + 2 * x) * 100) / 100);
   }
@@ -96,7 +107,7 @@ export function obiettivo(e) {
   }
   const sets = last.ex.sets.map(s => ({ kg: num(s.kg), reps: num(s.reps) || 0, rir: num(s.rir) }));
   const reps = sets.map(s => s.reps), txtPrec = e.tipo === 'carico'
-    ? (new Set(sets.map(s => s.kg)).size === 1 ? `${fmt(sets[0].kg, 2)} kg × ${reps.join(' · ')}` : sets.map(s => `${fmt(s.kg, 2)}×${s.reps}`).join(' · '))
+    ? (new Set(sets.map(s => s.kg)).size === 1 ? `${kgT(e, sets[0].kg)} × ${reps.join(' · ')}` : sets.map(s => `${kgN(e, s.kg)}×${s.reps}`).join(' · ') + (perLato(e) ? ' (kg per lato)' : ''))
     : reps.join(' · ') + (e.tipo === 'tempo' ? '″' : '');
   if (e.tipo === 'tempo') {
     const best = Math.max(...reps), t = best + 5;
@@ -111,23 +122,23 @@ export function obiettivo(e) {
   if (r && lavoro.length >= Math.min(serie, sets.length) && lavoro.every(s => s.reps >= r.hi)) {
     const kg = caricoFattibile(e, kgPrec + passoKg(e));
     return { tipo: 'su', kg, reps: Array(serie).fill(r.lo), prec: txtPrec,
-      testo: `Hai chiuso il range (${txtPrec}). Oggi sali a ${fmt(kg, 2)} kg e riparti da ${r.lo} ripetizioni.` };
+      testo: `Hai chiuso il range (${txtPrec}). Oggi sali a ${kgT(e, kg)} e riparti da ${r.lo} ripetizioni.` };
   }
   const torna = dopoScarico(e.nome);
   if (torna) {
     const kg = caricoFattibile(e, torna), rr = r ? r.lo : Math.max(...reps);
-    return { tipo: 'su', kg, reps: Array(serie).fill(rr), prec: txtPrec, testo: `Scarico fatto. Oggi torni a ${fmt(kg, 2)} kg e punti a ${rr} ripetizioni.` };
+    return { tipo: 'su', kg, reps: Array(serie).fill(rr), prec: txtPrec, testo: `Scarico fatto. Oggi torni a ${kgT(e, kg)} e punti a ${rr} ripetizioni.` };
   }
   const st = stallo(e.nome);
   if (st && !st.scarico) {
     const kg = caricoFattibile(e, kgPrec * 0.9), rr = r ? r.lo : Math.max(...reps);
     return { tipo: 'stallo', kg, reps: Array(serie).fill(rr), prec: txtPrec,
-      testo: `Sei fermo da 3 allenamenti (${txtPrec}). Oggi fai uno scarico: ${fmt(kg, 2)} kg (circa −10%) per ${rr} ripetizioni, senza arrivare al limite. La prossima volta torni a ${fmt(kgPrec, 2)} kg più fresco.` };
+      testo: `Sei fermo da 3 allenamenti (${txtPrec}). Oggi fai uno scarico: ${kgT(e, kg)} (circa −10%) per ${rr} ripetizioni, senza arrivare al limite. La prossima volta torni a ${kgT(e, kgPrec)} più fresco.` };
   }
   const t = [...reps]; while (t.length < serie) t.push(t.at(-1) ?? (r ? r.lo : 8));
   const iMin = t.indexOf(Math.min(...t.slice(0, serie))); t[iMin]++;
   if (r && t.some(x => x < r.lo) && sets.filter(s => s.kg === kgPrec).every(s => s.reps < r.lo)) {
-    return { tipo: 'uguale', kg: kgPrec, reps: Array(serie).fill(r.lo), prec: txtPrec, testo: `L'ultima volta ${txtPrec}: resta a ${fmt(kgPrec, 2)} kg e punta a ${r.lo} ripetizioni pulite.` };
+    return { tipo: 'uguale', kg: kgPrec, reps: Array(serie).fill(r.lo), prec: txtPrec, testo: `L'ultima volta ${txtPrec}: resta a ${kgT(e, kgPrec)} e punta a ${r.lo} ripetizioni pulite.` };
   }
   if (st && st.scarico) {
     const alt = alternative(e.nome, e.gruppo).filter(x => attrezzoDi(x) === attrezzoDi(e))[0] || alternative(e.nome, e.gruppo)[0];
@@ -140,7 +151,7 @@ export function obiettivo(e) {
 /* Riscaldamento consigliato per il primo esercizio pesante con bilanciere */
 export function riscaldamento(e, kg) {
   if (attrezzoDi(e) !== 'Bilanciere' || !kg || kg < 30) return [];
-  const bar = num(attrezzatura().bilanciere) || 20;
+  const bar = barKg();
   return [{ kg: bar, reps: 10 }, { kg: caricoFattibile(e, kg * 0.55), reps: 6 }, { kg: caricoFattibile(e, kg * 0.75), reps: 3 }]
     .filter((x, i, a) => i === 0 || x.kg > a[i - 1].kg);
 }

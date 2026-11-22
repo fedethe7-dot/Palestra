@@ -3,18 +3,18 @@
    La struttura è compatibile con le versioni precedenti: migra() aggiunge solo i campi nuovi. */
 import { normDate, todayISO, uid, num, parseISO, isoOf, weekStart, addDays, isoFrom, daysBetween } from './util.js';
 
-export const VERSIONE = '6.4.1';
+export const VERSIONE = '6.5.0';
 
 /* ---------- Le tue schede di partenza (carichi aggiornati dalla Dashboard del foglio) ---------- */
 export const SCHEDE_DEFAULT = {
   A: { nome: 'Petto • Spalle • Tricipiti', esercizi: [
-    { nome: 'Panca Piana', gruppo: 'Petto', tipo: 'carico', serie: 3, rip: '8-12', carico: '42', recupero: '2 min', note: 'Bilanciere' },
+    { nome: 'Panca Piana', gruppo: 'Petto', tipo: 'carico', serie: 3, rip: '8-12', carico: '30.7', recupero: '2 min', note: 'Bilanciere' },
     { nome: 'Croci su Panca', gruppo: 'Petto', tipo: 'carico', serie: 3, rip: '10-12', carico: '11', recupero: '90 sec', note: 'Manubri • discesa in 3 sec' },
     { nome: 'Alzate Laterali', gruppo: 'Spalle', tipo: 'carico', serie: 3, rip: '12-15', carico: '2.5', recupero: '60 sec', note: 'Manubri • pausa in alto' },
     { nome: 'Pushdown Corda', gruppo: 'Tricipiti', tipo: 'carico', serie: 3, rip: '10-15', carico: '13', recupero: '60 sec', note: 'Carrucola alta • corda' },
   ]},
   B: { nome: 'Schiena • Bicipiti • Spalle post.', esercizi: [
-    { nome: 'Rematore Bilanciere', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '8-12', carico: '40', recupero: '2 min', note: 'Bilanciere' },
+    { nome: 'Rematore Bilanciere', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '8-12', carico: '28.7', recupero: '2 min', note: 'Bilanciere' },
     { nome: 'Lat Machine Cavo', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '10-12', carico: '23', recupero: '90 sec', note: 'Carrucola alta • in ginocchio' },
     { nome: 'Curl Manubri', gruppo: 'Bicipiti', tipo: 'carico', serie: 3, rip: '8-12', carico: '10', recupero: '90 sec', note: 'Manubri' },
     { nome: 'Face Pull Cavo', gruppo: 'Spalle post.', tipo: 'carico', serie: 3, rip: '12-15', carico: '17', recupero: '60 sec', note: 'Carrucola alta • corda, gomiti alti' },
@@ -36,13 +36,13 @@ export const copiaSchede = () => JSON.parse(JSON.stringify(SCHEDE_DEFAULT));
 
 /* Attrezzatura (dalla scheda "Pesi" del foglio): dischi in kg con quantità totale */
 export const ATTREZZATURA_DEFAULT = {
-  bilanciere: 20,
+  bilanciere: 8.7,
   dischi: [
     { kg: 20, qta: 2, carrucola: false }, { kg: 5, qta: 4, carrucola: true }, { kg: 2.5, qta: 4, carrucola: true },
     { kg: 2, qta: 8, carrucola: true }, { kg: 1.25, qta: 4, carrucola: true }, { kg: 0.5, qta: 8, carrucola: true },
   ],
   carrucolaMax: 30,
-  passoBilanciere: 2, passoManubri: 1, passoCarrucola: 1,
+  passoBilanciere: 1, passoManubri: 1, passoCarrucola: 1,   // bilanciere: aumento per lato
 };
 
 /* Sezioni della schermata Oggi, nell'ordine scelto */
@@ -98,6 +98,34 @@ export function migra(d) {
   settings.home = home;
   settings.attrezzatura = { ...JSON.parse(JSON.stringify(ATTREZZATURA_DEFAULT)), ...(settings.attrezzatura || {}) };
   const workouts = pulisciAllenamenti(d.workouts);
+  const schede = d.schede || copiaSchede();
+  // Novembre 2026: il bilanciere pesa 8,7 kg (non 20) → correggo una volta sola i pesi già salvati
+  if (!d.settings) settings.bilanciere87 = settings.scheda3x4 = true;   // installazione nuova: niente da correggere
+  if (!settings.bilanciere87) {
+    const a = settings.attrezzatura;
+    if (num(a.bilanciere) === 20) a.bilanciere = 8.7;
+    if (num(a.passoBilanciere) === 2) a.passoBilanciere = 1;
+    const corr = (nome, kg, date) => correggiBilanciere(nome, kg, date);
+    const sistemaSets = (lista, date) => (lista || []).forEach(e => (e.sets || []).forEach(x => { const k = corr(e.nome, x.kg, date); if (k != null) x.kg = k; }));
+    workouts.forEach(w => sistemaSets(w.exercises, w.date));
+    (d.outbox || []).forEach(o => { if (o.type === 'workout' && o.workout) sistemaSets(o.workout.exercises, o.workout.date); });
+    if (d.draft) sistemaSets(d.draft.exercises, '2026-11-22');
+    const schedaCarico = e => { const k = corr(e.nome, e.carico, '2026-11-22'); if (k != null) e.carico = String(k); };
+    if (d.schede) Object.values(schede).forEach(sc => sc.esercizi.forEach(schedaCarico));
+    (d.draft?.exercises || []).forEach(schedaCarico);
+    settings.lastRead = '';   // rilegge subito il foglio (già corretto)
+    settings.bilanciere87 = true;
+  }
+  // Novembre 2026: 3 esercizi per sessione da 4 serie
+  if (!settings.scheda3x4) {
+    const via = { A: 'distensioni manubri', B: 'pullover cavo', C: 'curl concentrato' };
+    Object.entries(via).forEach(([k, nome]) => {
+      const sc = schede[k]; if (!sc || sc.esercizi.length !== 4 || !sc.esercizi.some(e => e.nome.toLowerCase() === nome)) return;
+      sc.esercizi = sc.esercizi.filter(e => e.nome.toLowerCase() !== nome);
+      sc.esercizi.forEach(e => e.serie = 4);
+    });
+    settings.scheda3x4 = true;
+  }
   // Fabbisogno dai dati reali (orologio + attività + palestra): attivato una volta, si può cambiare in Impostazioni
   if (!settings.attivitaAutoAttivata) { settings.attivita = 'auto'; settings.attivitaAutoAttivata = true; }
   if (!settings.programmaInizio) {
@@ -111,7 +139,7 @@ export function migra(d) {
     body: (d.body || []).map(p => ({ ...p, id: p.id || uid(), date: normDate(p.date) })).filter(p => p.date),
     misure: (d.misure || []).filter(m => normDate(m.date)),
     settings,
-    schede: d.schede || copiaSchede(),
+    schede,
     programmi: d.programmi || [],
     eserciziMiei: d.eserciziMiei || [],
     draft: d.draft ? { cur: 0, ...d.draft } : null,
@@ -127,6 +155,19 @@ export function migra(d) {
     // Pesate cancellate (qui o in Salute): non devono tornare rileggendo il foglio
     pesiTolti: d.pesiTolti || {},
   };
+}
+
+/* Correzione dei vecchi pesi col bilanciere (prima contati con un bilanciere da 20 kg).
+   Restituisce il peso reale corretto, oppure null se non c'è niente da cambiare.
+   Le stesse correzioni sono state fatte a mano nel foglio Allenamenti il 22/11/2026. */
+export function correggiBilanciere(nome, kg, date) {
+  const n = String(nome || '').toLowerCase(), v = num(kg);
+  if (v == null || !date || date > '2026-11-22') return null;
+  const r = x => Math.round(x * 100) / 100;
+  if ((n === 'panca piana' || n === 'rematore bilanciere') && v >= 20) return r(v - 11.3);   // 20 + 2×lato → 8,7 + 2×lato
+  if (n === 'pullover' && v === 24 && date < '2026-10-10') return 12.7;                        // fatto col bilanciere, 2 kg per lato
+  if (n === 'curl bilanciere' && v === 10) return 18.7;                                         // contati solo i dischi (5 per lato)
+  return null;
 }
 
 /* Stato condiviso dell'app: dati + schermata corrente */
