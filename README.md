@@ -40,6 +40,8 @@ Installabile sul telefono (PWA) e sincronizzata con il foglio Google **Allenamen
 | `js/foto-piatti.js` | Foto dei piatti (Wikimedia Commons, licenze libere) |
 | `ricette.csv` | Ricette incluse (si caricano da sole) |
 | `sw.js`, `manifest.json` | Installazione e funzionamento offline |
+| `versione.json`, `js/aggiorna.js` | Ultima versione pubblicata: se il telefono ne ha una più vecchia l'app si aggiorna da sola (anche dal pulsante in Impostazioni) |
+| `aggiorna.html` | Pagina di emergenza: cancella la copia vecchia dell'app (non i dati) e la riapre aggiornata |
 | `img/es/` | Foto degli esercizi (WebP) |
 
 ## Ricette (CSV)
@@ -66,6 +68,10 @@ L'app è già pronta per diventare un'app Android: ha il manifest, le icone e il
 3. Scegli **Android** → **Generate Package** → scarica lo zip e installa il file `.apk` sul telefono.
 
 Per notifiche del recupero precise anche a schermo spento il passo successivo è Capacitor con le notifiche locali.
+
+## Pubblicare una nuova versione
+Aumenta lo stesso numero in `js/dati.js` (`VERSIONE`), `sw.js` (`VER`), `index.html` (`?v=`) e `versione.json`.
+Se l'app sul telefono resta vecchia: apri https://fedethe7-dot.github.io/Palestra/aggiorna.html
 
 ## Crediti
 - Foto degli esercizi: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (pubblico dominio).

@@ -1,0 +1,14 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store"><title>Aggiorna Palestra</title>
+<style>body{font-family:system-ui,sans-serif;background:#060914;color:#eef;display:grid;place-items:center;min-height:100vh;margin:0;padding:16px;text-align:center}a{color:#8ab4ff}p{max-width:30em}</style></head>
+<body><div><h1>Aggiorno Palestra…</h1><p id="msg">Cancello la copia vecchia salvata nel telefono. I tuoi dati (allenamenti, schede, pesate) restano.</p><p><a href="./">Apri Palestra</a></p></div>
+<script>
+/* Pagina di emergenza: se l'app resta su una versione vecchia, apri questa pagina una volta.
+   Toglie il service worker e la cache dell'app (non i dati) e riapre l'app scaricandola di nuovo. */
+(async () => {
+  try { if (navigator.serviceWorker) for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); } catch (e) {}
+  try { if (window.caches) for (const k of await caches.keys()) if (k.startsWith('palestra-') && k !== 'palestra-extra') await caches.delete(k); } catch (e) {}
+  document.getElementById('msg').textContent = 'Fatto! Riapro l’app con la versione nuova…';
+  setTimeout(() => location.replace('./?agg=' + Date.now() + '#oggi'), 1200);
+})();
+</script></body></html>

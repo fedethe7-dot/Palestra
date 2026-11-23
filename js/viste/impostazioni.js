@@ -24,6 +24,7 @@ function menu() {
   return `${testata('Impostazioni', '', { back: 'oggi', destra: '' })}
     <div class="card lista menu-imp">${VOCI.map(([k, t, i, sub]) => `<button class="voce" data-action="go" data-view="impostazioni" data-p="${k}">
       <span class="v-ico">${ico(i, 20)}</span><span class="v-t"><b>${t}</b><small>${esc(sub())}</small></span>${ico('avanti', 18)}</button>`).join('')}</div>
+    <div class="row-btns"><button class="btn full" data-action="aggiorna-app">${ico('scarica', 18)} Controlla aggiornamenti</button></div>
     <p class="muted small centro">Palestra ${VERSIONE}${BETA ? ' · versione di prova' : ''}<br>Foto degli esercizi: free-exercise-db (pubblico dominio)</p>`;
 }
 

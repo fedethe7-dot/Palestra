@@ -1,6 +1,7 @@
 /* ============ PALESTRA 6 ============
    Avvio, navigazione tra le schermate e gestione centralizzata di tocchi e campi. */
 import { S, save, cfg, VERSIONE } from './dati.js';
+import { controllaVersione, aggiornaOra } from './aggiorna.js';
 import { $, toast } from './util.js';
 import { app, ico, chiudiFoglio, foglioAperto } from './ui.js';
 import { applicaTema } from './tema.js';
@@ -90,6 +91,7 @@ document.addEventListener('click', e => {
   const a = el.dataset.action;
   if (a === 'go') { e.preventDefault(); return go(el.dataset.view, el.dataset.p ?? null); }
   if (a === 'foglio-chiudi') return chiudiFoglio();
+  if (a === 'aggiorna-app') return aggiornaOra(true);
   const fn = AZIONI[a];
   if (fn) { e.preventDefault(); fn(el, e); }
 });
@@ -125,9 +127,12 @@ aggiornaTutto();
 Cucina.caricaRicetteBase();
 sincronizzaSalute();
 window.PALESTRA = { versione: VERSIONE, S };
+/* Se online c'è una versione più nuova di quella aperta, l'app si aggiorna da sola (mai durante un allenamento) */
+controllaVersione();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') controllaVersione(); });
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => {});
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => {});
   let ricaricata = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (!ricaricata && !S.db.draft) { ricaricata = true; location.reload(); } });
 }
