@@ -3,7 +3,7 @@
    La struttura è compatibile con le versioni precedenti: migra() aggiunge solo i campi nuovi. */
 import { normDate, todayISO, uid, num, parseISO, isoOf, weekStart, addDays, isoFrom, daysBetween } from './util.js';
 
-export const VERSIONE = '6.5.2';
+export const VERSIONE = '6.5.3';
 
 /* ---------- Le tue schede di partenza: 3 esercizi × 4 serie (novembre 2026, carichi dal foglio Allenamenti) ----------
    Sul bilanciere il carico è il peso reale (bilanciere 8,7 + dischi): l'app lo mostra per lato. */

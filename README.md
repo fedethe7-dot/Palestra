@@ -61,13 +61,12 @@ Una volta a settimana l'app gli manda la copia completa dei dati: lui la salva n
 5. Copia il link che finisce con `/exec` e incollalo in app: Impostazioni → Foglio Google → Backup completo nel foglio.
 6. Premi **Fai il backup adesso**.
 
-## Da app web ad APK
-L'app è già pronta per diventare un'app Android: ha il manifest, le icone e il service worker.
-1. Apri https://www.pwabuilder.com dal computer.
-2. Incolla `https://fedethe7-dot.github.io/Palestra/` e premi **Start**.
-3. Scegli **Android** → **Generate Package** → scarica lo zip e installa il file `.apk` sul telefono.
-
-Per notifiche del recupero precise anche a schermo spento il passo successivo è Capacitor con le notifiche locali.
+## App Android (APK)
+- Scarica: https://fedethe7-dot.github.io/Palestra/Palestra.apk
+- L'APK apre sempre l'app dal sito, quindi ogni aggiornamento arriva da solo: non va mai rifatto per le modifiche all'app.
+- Il progetto Android è in `android/` (WebView + ponte `window.PalestraApk` per salvare file in Download, stampa/PDF, notifiche del timer, fotocamera).
+- Per ricompilarlo serve la chiave di firma `palestra.jks` (non è nel repository: la tiene Federico), con la sua password:
+  `PALESTRA_KEYSTORE=/percorso/palestra.jks PALESTRA_KS_PASS=... gradle assembleRelease` dentro `android/`.
 
 ## Pubblicare una nuova versione
 Aumenta lo stesso numero in `js/dati.js` (`VERSIONE`), `sw.js` (`VER`), `index.html` (`?v=`) e `versione.json`.

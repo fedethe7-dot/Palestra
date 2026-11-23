@@ -30,6 +30,7 @@ const vib = p => { if (cfg().vibrazione) vibra(p); };
 async function notifica(titolo, testo) {
   if (!cfg().notifiche || document.visibilityState === 'visible') return;
   try {
+    if (window.PalestraApk) return window.PalestraApk.notifica(titolo, testo);
     if (Notification.permission !== 'granted') return;
     const reg = await navigator.serviceWorker?.ready;
     if (reg) reg.showNotification(titolo, { body: testo, tag: 'palestra-timer', renotify: true, vibrate: [300, 150, 300], icon: 'icon-192.png' });
@@ -37,6 +38,7 @@ async function notifica(titolo, testo) {
 }
 export async function chiediNotifiche() {
   try {
+    if (window.PalestraApk) { window.PalestraApk.chiediNotifiche(); return true; }
     if (!('Notification' in window)) { toast('Questo browser non supporta le notifiche'); return false; }
     const p = await Notification.requestPermission();
     if (p !== 'granted') { toast('Notifiche non consentite'); return false; }

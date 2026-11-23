@@ -1,0 +1,22 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'it.palestra.app'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'it.palestra.app'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('PALESTRA_KEYSTORE') ?: 'palestra.jks')
+            storePassword System.getenv('PALESTRA_KS_PASS') ?: ''
+            keyAlias 'palestra'
+            keyPassword System.getenv('PALESTRA_KS_PASS') ?: ''
+        }
+    }
+    buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}

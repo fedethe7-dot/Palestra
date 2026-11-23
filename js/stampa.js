@@ -15,6 +15,10 @@ function stampa(titolo, sotto, corpo) {
   el.innerHTML = `<div class="p-head"><div><h1>${titolo}</h1><p>${sotto}</p></div><div class="p-logo">Palestra</div></div>${corpo}
     <div class="p-foot">Creato il ${new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })} con l'app Palestra. Valori stimati con formule standard: non sostituiscono una visita.</div>`;
   document.body.classList.add('printing');
+  if (window.PalestraApk) {   // app Android: stampa o salva in PDF dal telefono
+    setTimeout(() => { window.PalestraApk.stampa(String(titolo).replace(/<[^>]*>/g, '')); setTimeout(() => document.body.classList.remove('printing'), 4000); }, 300);
+    return;
+  }
   setTimeout(() => { try { window.print(); } catch (e) { toast('Stampa non disponibile qui'); } }, 60);
 }
 window.addEventListener('afterprint', () => document.body.classList.remove('printing'));

@@ -76,6 +76,13 @@ export function chiedi({ titolo, testo = '', ok = 'Conferma', annulla = 'Annulla
 
 /* ---------- Scarica un file (backup, CSV) ---------- */
 export function scaricaFile(nome, contenuto, tipo) {
+  // App Android: il file va nella cartella Download tramite il telefono
+  if (window.PalestraApk) {
+    const fr = new FileReader();
+    fr.onload = () => window.PalestraApk.salvaFile(nome, tipo || '', String(fr.result).split(',')[1] || '');
+    fr.readAsDataURL(contenuto instanceof Blob ? contenuto : new Blob([contenuto], { type: tipo }));
+    return;
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([contenuto], { type: tipo }));
   a.download = nome; document.body.appendChild(a); a.click(); a.remove();
