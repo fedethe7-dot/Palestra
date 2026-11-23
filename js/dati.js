@@ -3,31 +3,35 @@
    La struttura è compatibile con le versioni precedenti: migra() aggiunge solo i campi nuovi. */
 import { normDate, todayISO, uid, num, parseISO, isoOf, weekStart, addDays, isoFrom, daysBetween } from './util.js';
 
-export const VERSIONE = '6.5.1';
+export const VERSIONE = '6.5.2';
 
-/* ---------- Le tue schede di partenza (carichi aggiornati dalla Dashboard del foglio) ---------- */
+/* ---------- Le tue schede di partenza: 3 esercizi × 4 serie (novembre 2026, carichi dal foglio Allenamenti) ----------
+   Sul bilanciere il carico è il peso reale (bilanciere 8,7 + dischi): l'app lo mostra per lato. */
 export const SCHEDE_DEFAULT = {
   A: { nome: 'Petto • Spalle • Tricipiti', esercizi: [
-    { nome: 'Panca Piana', gruppo: 'Petto', tipo: 'carico', serie: 3, rip: '8-12', carico: '30.7', recupero: '2 min', note: 'Bilanciere' },
-    { nome: 'Croci su Panca', gruppo: 'Petto', tipo: 'carico', serie: 3, rip: '10-12', carico: '11', recupero: '90 sec', note: 'Manubri • discesa in 3 sec' },
-    { nome: 'Alzate Laterali', gruppo: 'Spalle', tipo: 'carico', serie: 3, rip: '12-15', carico: '2.5', recupero: '60 sec', note: 'Manubri • pausa in alto' },
-    { nome: 'Pushdown Corda', gruppo: 'Tricipiti', tipo: 'carico', serie: 3, rip: '10-15', carico: '13', recupero: '60 sec', note: 'Carrucola alta • corda' },
+    { nome: 'Panca Piana', gruppo: 'Petto', tipo: 'carico', serie: 4, rip: '6-8', carico: '32.7', recupero: '150 sec', note: 'Bilanciere' },
+    { nome: 'Military Press', gruppo: 'Spalle', tipo: 'carico', serie: 4, rip: '8-10', carico: '12.7', recupero: '2 min', note: 'Bilanciere' },
+    { nome: 'Estensioni sopra la Testa al Cavo', gruppo: 'Tricipiti', tipo: 'carico', serie: 4, rip: '10-15', carico: '6', recupero: '60 sec', note: 'Carrucola alta' },
   ]},
   B: { nome: 'Schiena • Bicipiti • Spalle post.', esercizi: [
-    { nome: 'Rematore Bilanciere', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '8-12', carico: '28.7', recupero: '2 min', note: 'Bilanciere' },
-    { nome: 'Lat Machine Cavo', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '10-12', carico: '23', recupero: '90 sec', note: 'Carrucola alta • in ginocchio' },
-    { nome: 'Curl Manubri', gruppo: 'Bicipiti', tipo: 'carico', serie: 3, rip: '8-12', carico: '10', recupero: '90 sec', note: 'Manubri' },
-    { nome: 'Face Pull Cavo', gruppo: 'Spalle post.', tipo: 'carico', serie: 3, rip: '12-15', carico: '17', recupero: '60 sec', note: 'Carrucola alta • corda, gomiti alti' },
+    { nome: 'Rematore manubrio', gruppo: 'Schiena', tipo: 'carico', serie: 4, rip: '8-12', carico: '10', recupero: '90 sec', note: 'Manubri' },
+    { nome: 'Curl Bilanciere', gruppo: 'Bicipiti', tipo: 'carico', serie: 4, rip: '8-12', carico: '18.7', recupero: '90 sec', note: 'Bilanciere' },
+    { nome: 'Alzate Posteriori', gruppo: 'Spalle post.', tipo: 'carico', serie: 4, rip: '12-15', carico: '4', recupero: '60 sec', note: 'Manubri' },
   ]},
-  C: { nome: 'Richiamo e Core', esercizi: [
-    { nome: 'Piegamenti', gruppo: 'Petto', tipo: 'corpo', serie: 3, rip: 'Max', carico: '', recupero: '90 sec', note: 'Corpo libero' },
-    { nome: 'Pullover Cavo', gruppo: 'Schiena', tipo: 'carico', serie: 3, rip: '12-15', carico: '18', recupero: '60 sec', note: 'Carrucola alta • braccia tese' },
-    { nome: 'Hammer Curl', gruppo: 'Bicipiti', tipo: 'carico', serie: 3, rip: '10-12', carico: '10', recupero: '90 sec', note: 'Manubri' },
-    { nome: 'Plank', gruppo: 'Core', tipo: 'tempo', serie: 3, rip: '45-60', carico: '', recupero: '60 sec', note: 'Corpo libero' },
+  C: { nome: 'Petto • Schiena • Core', esercizi: [
+    { nome: 'Piegamenti Piedi Rialzati', gruppo: 'Petto', tipo: 'corpo', serie: 4, rip: 'Max', carico: '', recupero: '90 sec', note: 'Corpo libero' },
+    { nome: 'Lat Machine un Braccio', gruppo: 'Schiena', tipo: 'carico', serie: 4, rip: '10-12', carico: '', recupero: '60 sec', note: 'Carrucola alta' },
+    { nome: 'Plank Laterale', gruppo: 'Core', tipo: 'tempo', serie: 4, rip: '30-45', carico: '', recupero: '60 sec', note: 'Corpo libero' },
   ]},
 };
+/* Le vecchie schede di partenza (4 esercizi × 3 serie): se il telefono ha ancora queste, passano alle nuove */
+const SCHEDE_VECCHIE = { A: ['panca piana', 'croci su panca', 'alzate laterali', 'pushdown corda'],
+  B: ['rematore bilanciere', 'lat machine cavo', 'curl manubri', 'face pull cavo'], C: ['piegamenti', 'pullover cavo', 'hammer curl', 'plank'] };
 /* Esercizi del vecchio programma: servono solo a riconoscere lo storico */
 export const ESERCIZI_STORICI = {
+  V: [['Croci su Panca', 'Petto'], ['Alzate Laterali', 'Spalle'], ['Pushdown Corda', 'Tricipiti'], ['Rematore Bilanciere', 'Schiena'], ['Lat Machine Cavo', 'Schiena'],
+    ['Curl Manubri', 'Bicipiti'], ['Face Pull Cavo', 'Spalle post.'], ['Piegamenti', 'Petto', 'corpo'], ['Pullover Cavo', 'Schiena'], ['Hammer Curl', 'Bicipiti'], ['Plank', 'Core', 'tempo'],
+    ['Distensioni Manubri', 'Petto'], ['Curl Concentrato', 'Bicipiti']].map(([nome, gruppo, tipo = 'carico']) => ({ nome, gruppo, tipo })),
   A: [{ nome: 'Estensioni Tricipiti', gruppo: 'Tricipiti', tipo: 'carico' }],
   B: [{ nome: 'Rematore manubrio', gruppo: 'Schiena', tipo: 'carico' }, { nome: 'Face Pull', gruppo: 'Spalle post.', tipo: 'carico' }],
   C: [{ nome: 'Pullover', gruppo: 'Schiena', tipo: 'carico' }],
@@ -125,6 +129,15 @@ export function migra(d) {
       sc.esercizi.forEach(e => e.serie = 4);
     });
     settings.scheda3x4 = true;
+  }
+  // Novembre 2026 (6.5.2): chi ha ancora le vecchie schede di partenza passa alla scheda nuova 3 × 4
+  if (!settings.schedaNov26) {
+    Object.entries(SCHEDE_VECCHIE).forEach(([k, nomi]) => {
+      const sc = schede[k], attuali = (sc?.esercizi || []).map(e => e.nome.toLowerCase());
+      if (!sc || attuali.length !== nomi.length || !nomi.every(n => attuali.includes(n))) return;
+      schede[k] = JSON.parse(JSON.stringify(SCHEDE_DEFAULT[k]));
+    });
+    settings.schedaNov26 = true;
   }
   // Fabbisogno dai dati reali (orologio + attività + palestra): attivato una volta, si può cambiare in Impostazioni
   if (!settings.attivitaAutoAttivata) { settings.attivita = 'auto'; settings.attivitaAutoAttivata = true; }
